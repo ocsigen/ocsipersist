@@ -1,0 +1,10 @@
+(library
+ (name ocsipersist_sqlite)
+ (public_name ocsipersist.sqlite)
+ (implements ocsipersist)
+ (libraries sqlite3 lwt_log xml-light ocsigenserver ocsipersist_lib)
+ (optional))
+
+(documentation
+ (package ocsipersist-sqlite)
+ (mld_files index))

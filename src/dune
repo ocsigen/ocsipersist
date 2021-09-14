@@ -1,0 +1,18 @@
+(library
+ (name ocsipersist_lib)
+ (public_name ocsipersist-lib)
+ (modules ocsipersist_lib)
+ (wrapped false)
+ (libraries lwt))
+
+(library
+ (public_name ocsipersist)
+ (virtual_modules ocsipersist)
+ (modules ocsipersist)
+ (wrapped false)
+ (libraries ocsipersist_lib lwt))
+
+(env
+ (_
+  (flags
+   (:standard -w -9-37-39))))
