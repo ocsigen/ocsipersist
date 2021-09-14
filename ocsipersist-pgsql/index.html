@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>index (ocsipersist-pgsql.index)</title><link rel="stylesheet" href="../odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc 2.0.2"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – ocsipersist-pgsql</nav><header class="odoc-preamble"><h1 id="ocsipersist-pgsql"><a href="#ocsipersist-pgsql" class="anchor"></a>ocsipersist-pgsql</h1><p>For the API documentation see OPAM package <code>ocsipersist</code>.</p><p>Here we document the configuration options of the ocsigenserver extension. All attributes of the <code>database</code> tag are optional.</p><p>One can either define a host to connect to:</p><pre><code>&lt;extension findlib-package=&quot;ocsipersist.pgsql&quot;&gt;
+  &lt;database
+     host=&quot;localhost&quot;
+     port=&quot;3000&quot;
+     user=&quot;ocsipersist&quot;
+     password=&quot;&lt;secret&gt;&quot;
+     size_conn_pool = &quot;16&quot;
+  /&gt;
+&lt;/extension&gt;</code></pre><p>Or a UNIX domain socket:</p><pre><code>&lt;extension findlib-package=&quot;ocsipersist.pgsql&quot;&gt;
+  &lt;database
+    unix_domain_socket_dir = &quot;pgsql_socket&quot;
+    user=&quot;ocsipersist&quot;
+    password=&quot;&lt;secret&gt;&quot;
+    size_conn_pool = &quot;16&quot;
+  /&gt;
+&lt;/extension&gt;</code></pre></header><div class="odoc-content"></div></body></html>
