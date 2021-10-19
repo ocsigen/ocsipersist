@@ -6,5 +6,5 @@
  (optional))
 
 (documentation
-  (package ocsipersist-pgsql)
-  (mld_files index))
+ (package ocsipersist-pgsql)
+ (mld_files index))
