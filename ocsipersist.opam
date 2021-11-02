@@ -18,3 +18,9 @@ depends: [
   "ocsigenserver" {>= "3.0.0"}
   "ocsipersist-lib"
 ]
+
+depopts: [
+	"ocsipersist-dbm"
+	"ocsipersist-pgsql"
+	"ocsipersist-sqlite"
+]
