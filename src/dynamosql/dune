@@ -1,0 +1,13 @@
+(library
+ (name ocsipersist_dynamosql)
+ (public_name ocsipersist.dynamosql)
+ (implements ocsipersist)
+ (modules ocsipersist pgsql dynamodb)
+ (private_modules pgsql dynamodb)
+ (libraries bs-aws lwt_log xml-light ocsigenserver ocsipersist_lib batteries pgocaml)
+ (preprocess
+  (pps lwt_ppx)))
+
+(documentation
+ (package ocsipersist-dynamosql)
+ (mld_files index))

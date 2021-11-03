@@ -463,6 +463,4 @@ module Registration = struct
     parse_global_config config;
     conn_pool :=
       Lwt_pool.create !Config.size_conn_pool ~validate:PGOCaml.alive connect
-
-  let _ = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun ()
 end

@@ -21,7 +21,6 @@ depends: [
 
 depopts: [
 	"ocsipersist-dbm"
-	"ocsipersist-dynamodb"
-	"ocsipersist-pgsql"
+	"ocsipersist-dynamosql"
 	"ocsipersist-sqlite"
 ]
