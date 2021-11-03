@@ -153,15 +153,6 @@ let exec db query params =
 
 let exec_ db query params = exec db query params >> Lwt.return_unit
 
-module Tables = struct
-  let tables = Hashtbl.create 1
-
-  let register table =
-    if Hashtbl.mem tables table
-    then failwith @@ "ocsipersist-pgsql: already initialised table " ^ table
-    else Hashtbl.add tables table ()
-end
-
 module Functorial = struct
   type internal = string
 
@@ -199,7 +190,6 @@ module Functorial = struct
 
     let init =
       let create_table table db =
-        Tables.register table;
         let query =
           sprintf
             "CREATE TABLE IF NOT EXISTS %s (key %s, value %s, PRIMARY KEY (key))"
@@ -381,7 +371,6 @@ module Store = struct
   let open_store store =
     use_pool @@ fun db ->
     let create_table db table =
-      Tables.register table;
       let query =
         sprintf
           "CREATE TABLE IF NOT EXISTS %s (key TEXT, value BYTEA, PRIMARY KEY(key))"
