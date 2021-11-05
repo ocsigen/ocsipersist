@@ -4,6 +4,7 @@ module type TABLE = Ocsipersist_lib.Sigs.TABLE
 
 module Config = struct
   let enabled = ref false
+  let sync = ref false
   let secure = ref true
   let region = ref None
   let credentials = Bs_aws.Credentials.get_defaults ()
@@ -15,6 +16,7 @@ module Registration = struct
     | Xml.Element ("dynamodb", attrs, []) ->
         let parse_attr = function
           | "enabled", e -> Config.enabled := bool_of_string e
+          | "sync", s -> Config.sync := bool_of_string s
           | "secure", s -> Config.secure := bool_of_string s
           | "region", r -> Config.region := Some r
           | "table-prefix", r -> Config.table_prefix := Some r
