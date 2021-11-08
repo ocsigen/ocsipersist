@@ -208,6 +208,12 @@ module Functorial = struct
 
     let iter_batch ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ = failwith __LOC__
 
+    let () =
+      Lwt.async @@ fun () ->
+      P.iter @@ fun key value ->
+      prerr_endline "synchronizing element";
+      D.add key value
+
     module Variable = Ocsipersist_lib.Variable (struct
       type k = Key.t
       type v = Value.t
