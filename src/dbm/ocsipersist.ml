@@ -229,6 +229,9 @@ module Functorial = struct
     let iter ?count ?gt ?geq ?lt ?leq f =
       fold ?count ?gt ?geq ?lt ?leq (fun k v () -> f k v) ()
 
+    let iter_batch ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
+      failwith "Ocsipersist.iter_batch not implemented for DBM"
+
     let iter_block ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
       failwith
         "iter_block not implemented for DBM. Please use Ocsipersist with sqlite"
