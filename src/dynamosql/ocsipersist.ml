@@ -211,12 +211,14 @@ module Functorial = struct
     let iter_batch ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ = failwith __LOC__
 
     let () =
-      Lwt.async @@ fun () ->
-      P.iter_batch @@ fun key_values ->
-      let n = List.length key_values in
-      let%lwt () = D.add_batch key_values in
-      prerr_endline @@ "synchronised " ^ string_of_int n ^ " elements";
-      Lwt.return_unit
+      if !Config.sync
+      then (
+        Lwt.async @@ fun () ->
+        P.iter_batch @@ fun key_values ->
+        let n = List.length key_values in
+        let%lwt () = D.add_batch key_values in
+        prerr_endline @@ "synchronised " ^ string_of_int n ^ " elements";
+        Lwt.return_unit)
 
     module Variable = Ocsipersist_lib.Variable (struct
       type k = Key.t
