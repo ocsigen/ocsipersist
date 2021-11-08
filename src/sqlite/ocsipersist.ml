@@ -343,6 +343,9 @@ module Functorial = struct
     let iter ?count ?gt ?geq ?lt ?leq f =
       fold ?count ?gt ?geq ?lt ?leq (fun k v () -> f k v) ()
 
+    let iter_batch ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
+      failwith "Ocsipersist.iter_batch not implemented for SQLite"
+
     let iter_block ?count ?gt ?geq ?lt ?leq f =
       let sql =
         sprintf

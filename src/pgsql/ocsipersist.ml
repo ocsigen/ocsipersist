@@ -261,7 +261,7 @@ module Functorial = struct
 
     let max_iter_block_size = 1000L
 
-    let rec iter_rec ?count ?gt ?geq ?lt ?leq f last =
+    let rec iter_rec last ?count ?gt ?geq ?lt ?leq f =
       match count with
       | Some c when c <= 0L -> Lwt.return_unit
       | _ ->
@@ -295,23 +295,24 @@ module Functorial = struct
             ; Some (Int64.to_string limit) ]
           in
           with_table (fun db -> Aux.exec_opt db query args) >>= fun l ->
-          Lwt_list.iter_s
-            (fun row ->
-              let k, v = key_value_of_row row in
-              f k v)
-            l
-          >>= fun () ->
+          let key_values = List.map key_value_of_row l in
+          f key_values >>= fun () ->
           if Int64.of_int (List.length l) < limit
           then Lwt.return_unit
           else
-            let last, _ = key_value_of_row @@ list_last l in
+            let last, _ = list_last key_values in
             let count =
-              Option.map Int64.(fun c -> sub c @@ of_int @@ List.length l) count
+              Option.map
+                Int64.(fun c -> sub c @@ of_int @@ List.length key_values)
+                count
             in
-            iter_rec ?count f ?gt ?geq ?lt ?leq (Some last)
+            iter_rec (Some last) ?count f ?gt ?geq ?lt ?leq
+
+    let iter_batch = iter_rec None
 
     let iter ?count ?gt ?geq ?lt ?leq f =
-      iter_rec ?count ?gt ?geq ?lt ?leq f None
+      let f key_values = Lwt_list.iter_s (fun (k, v) -> f k v) key_values in
+      iter_rec None ?count ?gt ?geq ?lt ?leq f
 
     let fold ?count ?gt ?geq ?lt ?leq f x =
       let res = ref x in

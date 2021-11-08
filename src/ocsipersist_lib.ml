@@ -41,6 +41,15 @@ module Sigs = struct
       -> (key -> value -> unit)
       -> unit Lwt.t
 
+    val iter_batch
+      :  ?count:int64
+      -> ?gt:key
+      -> ?geq:key
+      -> ?lt:key
+      -> ?leq:key
+      -> ((key * value) list -> unit Lwt.t)
+      -> unit Lwt.t
+
     module Variable : sig
       type t
 
