@@ -16,7 +16,7 @@ module Registration = struct
     | Xml.Element ("dynamodb", attrs, []) ->
         let parse_attr = function
           | "enabled", e -> Config.enabled := bool_of_string e
-          | "sync", s -> Config.sync := bool_of_string s
+          | "sync", s -> Config.sync := s = "true"
           | "secure", s -> Config.secure := bool_of_string s
           | "region", r -> Config.region := Some r
           | "table-prefix", r -> Config.table_prefix := Some r
