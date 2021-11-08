@@ -212,9 +212,11 @@ module Functorial = struct
 
     let () =
       Lwt.async @@ fun () ->
-      P.iter @@ fun key value ->
-      prerr_endline "synchronizing element";
-      D.add key value
+      P.iter_batch @@ fun key_values ->
+      let n = List.length key_values in
+      let%lwt () = D.add_batch key_values in
+      prerr_endline @@ "synchronised " ^ string_of_int n ^ " elements";
+      Lwt.return_unit
 
     module Variable = Ocsipersist_lib.Variable (struct
       type k = Key.t
