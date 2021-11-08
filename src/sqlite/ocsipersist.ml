@@ -311,6 +311,7 @@ module Functorial = struct
 
     let find k = with_table @@ db_get k
     let add k v = with_table @@ db_replace k v
+    let add_batch _ = failwith __LOC__
 
     let replace_if_exists k v =
       with_table @@ fun db ->

@@ -137,6 +137,17 @@ module Make (AwsConf : Bs_aws.Service.CONF) (Config : CONFIG) = struct
         with_table @@ fun table ->
         Aux.get_item ~decode:Value.decode ~table ~vkey [kkey, Key.encode k]
 
+      let add_batch key_values =
+        let write_request =
+          let open Dynamodb.BatchWriteItem in
+          PutRequest
+            (List.map
+               (fun (k, v) -> [kkey, Key.encode k; vkey, Value.encode v])
+               key_values)
+        in
+        with_table @@ fun table ->
+        Lwt.map ignore @@ Dynamodb.batch_write_item [table, [write_request]]
+
       let add k v =
         with_table @@ fun table ->
         Lwt.map ignore

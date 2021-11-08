@@ -218,6 +218,8 @@ module Functorial = struct
       in
       Aux.exec_ db query @@ Aux.encode_pair key value
 
+    let add_batch _ = failwith __LOC__
+
     let replace_if_exists key value =
       with_table @@ fun db ->
       let query =

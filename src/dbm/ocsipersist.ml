@@ -199,6 +199,7 @@ module Functorial = struct
     let name = T.name
     let find key = Lwt.map Value.decode @@ Db.get (name, Key.encode key)
     let add key value = Db.replace (name, Key.encode key) (Value.encode value)
+    let add_batch _ = failwith __LOC__
 
     let replace_if_exists key value =
       Db.replace_if_exists (name, Key.encode key) (Value.encode value)

@@ -8,6 +8,7 @@ module Sigs = struct
     val name : string
     val find : key -> value Lwt.t
     val add : key -> value -> unit Lwt.t
+    val add_batch : (key * value) list -> unit Lwt.t
     val replace_if_exists : key -> value -> unit Lwt.t
     val remove : key -> unit Lwt.t
     val modify_opt : key -> (value option -> value option) -> unit Lwt.t

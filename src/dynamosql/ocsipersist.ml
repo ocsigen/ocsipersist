@@ -178,6 +178,8 @@ module Functorial = struct
       async (fun () -> D.add key value);
       P.add key value
 
+    let add_batch _ = failwith __LOC__
+
     let replace_if_exists key value =
       async (fun () -> D.replace_if_exists key value);
       P.replace_if_exists key value
