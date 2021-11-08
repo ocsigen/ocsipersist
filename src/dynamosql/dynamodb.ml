@@ -146,7 +146,15 @@ module Make (AwsConf : Bs_aws.Service.CONF) (Config : CONFIG) = struct
             key_values
         in
         with_table @@ fun table ->
-        Lwt.map ignore @@ Dynamodb.batch_write_item [table, write_requests]
+        let rec loop xs =
+          try
+            let l, r = BatList.split_at 25 xs in
+            let%lwt _ = Dynamodb.batch_write_item [table, l] in
+            loop r
+          with Invalid_argument _ ->
+            Lwt.map ignore @@ Dynamodb.batch_write_item [table, xs]
+        in
+        loop write_requests
 
       let add k v =
         with_table @@ fun table ->
