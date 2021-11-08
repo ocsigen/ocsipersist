@@ -214,7 +214,7 @@ module Functorial = struct
       Lwt.async @@ fun () ->
       P.iter_batch @@ fun key_values ->
       let n = List.length key_values in
-      let%lwt () = D.add_batch key_values in
+      let%lwt () = if n <> 0 then D.add_batch key_values else Lwt.return_unit in
       prerr_endline @@ "synchronised " ^ string_of_int n ^ " elements";
       Lwt.return_unit
 
