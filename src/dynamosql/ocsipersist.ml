@@ -214,6 +214,7 @@ module Functorial = struct
       if !Config.sync
       then (
         Lwt.async @@ fun () ->
+        prerr_endline @@ "synchronising table " ^ T.name;
         P.iter_batch @@ fun key_values ->
         let n = List.length key_values in
         let%lwt () = D.add_batch key_values in
