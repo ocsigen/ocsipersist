@@ -239,8 +239,10 @@ module Functorial = struct
       let old_value =
         match value with [Some v] :: _ -> Some (Value.decode v) | _ -> None
       in
-      match f old_value with
-      | Some new_value ->
+      let new_value = f old_value in
+      match new_value = old_value, new_value with
+      | true, _ -> Lwt.return_unit
+      | false, Some new_value ->
           let query =
             sprintf
               "INSERT INTO %s VALUES ($1, $2)
@@ -248,7 +250,7 @@ module Functorial = struct
               name
           in
           Aux.exec_ db query @@ Aux.encode_pair key new_value
-      | None ->
+      | false, None ->
           let query = sprintf "DELETE FROM %s WHERE key = $1" name in
           Aux.exec_ db query [Key.encode key]
 
