@@ -246,7 +246,7 @@ struct
   let make ~name ~default = {name; default = (fun () -> Lwt.return default)}
 
   let get {name; default} =
-    try T.find name
+    try%lwt T.find name
     with Not_found ->
       default () >>= fun d ->
       T.add name d >>= fun () -> Lwt.return d
