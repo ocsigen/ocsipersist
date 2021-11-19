@@ -346,8 +346,13 @@ module Functorial = struct
       type t = float
 
       let column_type = "float"
-      let encode = PGOCaml.string_of_float
-      let decode = PGOCaml.float_of_string
+
+      let encode f =
+        let result = Printf.sprintf "%.16f" f in
+        prerr_endline (Printf.sprintf "%.9f -> %s" f result);
+        result
+
+      let decode = Stdlib.float_of_string
     end
 
     module Marshal (C : sig
