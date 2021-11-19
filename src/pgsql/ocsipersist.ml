@@ -346,7 +346,12 @@ module Functorial = struct
       type t = float
 
       let column_type = "float"
-      let encode = Stdlib.string_of_float
+
+      let encode f =
+        let result = Stdlib.string_of_float f in
+        prerr_endline (Printf.sprintf "%.9f -> %s" f result);
+        result
+
       let decode = Stdlib.float_of_string
     end
 
