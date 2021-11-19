@@ -346,8 +346,8 @@ module Functorial = struct
       type t = float
 
       let column_type = "float"
-      let encode = PGOCaml.string_of_float
-      let decode = PGOCaml.float_of_string
+      let encode = Stdlib.string_of_float
+      let decode = Stdlib.float_of_string
     end
 
     module Marshal (C : sig
