@@ -280,18 +280,19 @@ module Functorial = struct
                            ORDER BY key LIMIT $6"
               name Key.column_type Key.column_type Key.column_type
               Key.column_type Key.column_type
-          and args =
-            let count =
-              match count with
-              | Some c when c <= max_iter_block_size -> c
-              | _ -> max_iter_block_size
-            in
+          in
+          let limit =
+            match count with
+            | Some c when c <= max_iter_block_size -> c
+            | _ -> max_iter_block_size
+          in
+          let args =
             [ Option.map Key.encode last
             ; Option.map Key.encode gt
             ; Option.map Key.encode geq
             ; Option.map Key.encode lt
             ; Option.map Key.encode leq
-            ; Some (Int64.to_string count) ]
+            ; Some (Int64.to_string limit) ]
           in
           with_table (fun db -> Aux.exec_opt db query args) >>= fun l ->
           Lwt_list.iter_s
@@ -300,7 +301,7 @@ module Functorial = struct
               f k v)
             l
           >>= fun () ->
-          if l = []
+          if Int64.of_int (List.length l) < limit
           then Lwt.return_unit
           else
             let last, _ = key_value_of_row @@ list_last l in
