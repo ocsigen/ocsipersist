@@ -139,7 +139,7 @@ let db_length t =
     Lwt.catch
       (fun () ->
         ignore (f table);
-        Lwt_unix.yield () >>= fun () -> aux Dbm.nextkey (n + 1))
+        Lwt.pause () >>= fun () -> aux Dbm.nextkey (n + 1))
       (function Not_found -> Lwt.return n | e -> Lwt.fail e)
   in
   aux Dbm.firstkey 0
@@ -305,7 +305,7 @@ let _ =
                           try
                             Dbm.remove t k
                           with _ -> ());
-                      Lwt_unix.yield ()
+                      Lwt.pause ()
                     )
                   )
                   t
