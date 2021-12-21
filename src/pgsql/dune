@@ -3,6 +3,8 @@
  (public_name ocsipersist.pgsql)
  (implements ocsipersist)
  (libraries pgocaml lwt_log xml-light ocsigenserver ocsipersist_lib)
+ (preprocess
+  (pps lwt_ppx))
  (optional))
 
 (documentation

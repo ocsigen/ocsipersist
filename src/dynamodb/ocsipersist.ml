@@ -54,18 +54,18 @@ module Aux = struct
       @@ Dynamodb.create_table ~attributes ~primary_key ?sort_key table
     with Dynamodb.ResourceInUse _ -> Lwt.return_unit
 
-  let get_item ~decode ~table ~vkey key =
-    let%lwt response =
-      Dynamodb.get_item ~table ~projection_expression:vkey key
-    in
+  let get_item ~decode ~table ~vkeys key =
+    let projection_expression = String.concat "," vkeys in
+    let%lwt response = Dynamodb.get_item ~table ~projection_expression key in
     match response.Dynamodb.GetItem.item with
     | None -> Lwt.fail Not_found
-    | Some [(key, value)] ->
-        assert (key = vkey);
-        Lwt.return @@ decode value
     | Some l ->
-        failwith @@ __LOC__ ^ ": unexpected number of attributes: "
-        ^ String.concat ", " (List.map fst l)
+        let extract_value vkey =
+          try List.assoc vkey l
+          with Not_found ->
+            failwith @@ "attribute missing in response: " ^ vkey
+        in
+        Lwt.return @@ decode @@ List.map extract_value vkeys
 end
 
 module Store = struct
@@ -86,8 +86,9 @@ module Store = struct
   let encode v = Dynamodb.B (Marshal.to_string v [])
 
   let decode = function
-    | Dynamodb.B b -> Marshal.from_string b 0
-    | _ -> failwith "value should be of type binary"
+    | [Dynamodb.B b] -> Marshal.from_string b 0
+    | [_] -> failwith "value should be of type binary"
+    | _ -> failwith "there should be only a single value column"
 
   let make_persistent ~store ~name ~default =
     let condition_expression =
@@ -102,7 +103,8 @@ module Store = struct
   let make_persistent_lazy_lwt ~store ~name ~default =
     try%lwt
       let%lwt _ =
-        Aux.get_item ~decode ~table:(Aux.table store) ~vkey [kkey, B name]
+        Aux.get_item ~decode ~table:(Aux.table store) ~vkeys:[vkey]
+          [kkey, B name]
       in
       Lwt.return {store; name}
     with Not_found ->
@@ -114,7 +116,7 @@ module Store = struct
     make_persistent_lazy_lwt ~store ~name ~default
 
   let get {name; store} =
-    Aux.get_item ~decode ~table:(Aux.table store) ~vkey [kkey, B name]
+    Aux.get_item ~decode ~table:(Aux.table store) ~vkeys:[vkey] [kkey, B name]
 
   let set {store; name} value =
     Lwt.map ignore
@@ -136,17 +138,25 @@ module Functorial = struct
     val decode : internal -> t
   end
 
+  module type COLUMNS = sig
+    type t
+
+    val columns : (string * string) list
+    val encode : t -> internal list
+    val decode : internal list -> t
+  end
+
   module Table (T : sig
     val name : string
   end)
   (Key : COLUMN)
-  (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t =
+  (Values : COLUMNS) : TABLE with type key = Key.t and type value = Values.t =
   struct
     type key = Key.t
-    type value = Value.t
+    type value = Values.t
 
     let kkey = "k"
-    let vkey = "val"
+    let vkeys = List.map fst Values.columns
     let name = T.name
 
     let column_type_of_string = function
@@ -164,21 +174,23 @@ module Functorial = struct
 
     let find k =
       with_table @@ fun table ->
-      Aux.get_item ~decode:Value.decode ~table ~vkey [kkey, Key.encode k]
+      Aux.get_item ~decode:Values.decode ~table ~vkeys [kkey, Key.encode k]
 
     let add k v =
       with_table @@ fun table ->
-      Lwt.map ignore
-      @@ Dynamodb.put_item ~table [kkey, Key.encode k; vkey, Value.encode v]
+      let key = kkey, Key.encode k
+      and values = List.combine vkeys @@ Values.encode v in
+      Lwt.map ignore @@ Dynamodb.put_item ~table (key :: values)
 
     let replace_if_exists k v =
       with_table @@ fun table ->
       let condition_expression =
         Dynamodb.ConditionExpression.(Function (Attribute_exists kkey))
       in
+      let key = kkey, Key.encode k
+      and values = List.combine vkeys @@ Values.encode v in
       Lwt.map ignore
-      @@ Dynamodb.put_item ~table ~condition_expression
-           [kkey, Key.encode k; vkey, Value.encode v]
+      @@ Dynamodb.put_item ~table ~condition_expression (key :: values)
 
     let remove k =
       with_table @@ fun table ->
@@ -224,6 +236,29 @@ module Functorial = struct
     | _ -> None
 
   module Column = struct
+    module Single (C : COLUMN) : COLUMNS with type t = C.t = struct
+      type t = C.t
+
+      let columns = ["val", C.column_type]
+      let encode v = [C.encode v]
+
+      let decode = function
+        | [v] -> C.decode v
+        | _ -> failwith "single value expected"
+    end
+
+    module Two (C1 : COLUMN) (C2 : COLUMN) : COLUMNS with type t = C1.t * C2.t =
+    struct
+      type t = C1.t * C2.t
+
+      let columns = ["val1", C1.column_type; "val2", C2.column_type]
+      let encode (v1, v2) = [C1.encode v1; C2.encode v2]
+
+      let decode = function
+        | [v1; v2] -> C1.decode v1, C2.decode v2
+        | _ -> failwith "two values expected"
+    end
+
     module String = struct
       type t = string
 

@@ -25,8 +25,6 @@ module PGOCaml = PGOCaml_generic.Make (Lwt_thread)
 open Lwt.Infix
 open Printf
 
-exception Ocsipersist_error
-
 module Config = struct
   let host = ref None
   let port = ref None
@@ -164,16 +162,26 @@ module Functorial = struct
     val decode : internal -> t
   end
 
+  module type COLUMNS = sig
+    type t
+
+    val columns : (string * string) list
+    val encode : t -> internal list
+    val decode : internal list -> t
+  end
+
   module Table (T : sig
     val name : string
   end)
   (Key : COLUMN)
-  (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t =
+  (Values : COLUMNS) : TABLE with type key = Key.t and type value = Values.t =
   struct
     type key = Key.t
-    type value = Value.t
+    type value = Values.t
 
     let name = T.name
+    let vkeys = List.map fst Values.columns
+    let vkeys_str = String.concat ", " vkeys
 
     module Aux = struct
       let exec_opt db query params =
@@ -185,15 +193,37 @@ module Functorial = struct
         PGOCaml.execute db ~name ~params ()
 
       let exec_ db query params = exec db query params >> Lwt.return_unit
-      let encode_pair key value = [Key.encode key; Value.encode value]
+      let encode_row key values = Key.encode key :: Values.encode values
+
+      let of_option ~__LOC__ = function
+        | None -> failwith @@ __LOC__ ^ ": unexpected NULL value"
+        | Some x -> x
+
+      let decode_row = function
+        | [] -> raise Not_found
+        | [row] ->
+            assert (List.length row = List.length Values.columns);
+            Values.decode @@ List.map (of_option ~__LOC__) row
+        | _ -> failwith @@ __LOC__ ^ ": single row expected"
+
+      let set_placeholders =
+        String.concat ", "
+        @@ List.mapi (fun i vkey -> sprintf "%s = $%d" vkey (i + 2)) vkeys
+
+      let value_placeholders =
+        String.concat ", " @@ List.mapi (fun i _ -> sprintf "$%d" (i + 2)) vkeys
     end
 
     let init =
       let create_table table db =
         let query =
+          let value_columns =
+            String.concat ", "
+            @@ List.map (fun (name, typ) -> name ^ " " ^ typ) Values.columns
+          in
           sprintf
-            "CREATE TABLE IF NOT EXISTS %s (key %s, value %s, PRIMARY KEY (key))"
-            table Key.column_type Value.column_type
+            "CREATE TABLE IF NOT EXISTS %s (key %s, %s, PRIMARY KEY (key))"
+            table Key.column_type value_columns
         in
         Aux.exec_ db query []
       in
@@ -203,27 +233,26 @@ module Functorial = struct
 
     let find key =
       with_table @@ fun db ->
-      let query = sprintf "SELECT value FROM %s WHERE key = $1 " name in
-      Aux.exec db query [Key.encode key] >>= function
-      | [Some value] :: _ -> Lwt.return (Value.decode value)
-      | _ -> Lwt.fail Not_found
+      let query = sprintf "SELECT %s FROM %s WHERE key = $1 " vkeys_str name in
+      let%lwt rows = Aux.exec db query [Key.encode key] in
+      Lwt.return @@ Aux.decode_row rows
 
     let add key value =
       with_table @@ fun db ->
       let query =
         sprintf
-          "INSERT INTO %s VALUES ($1, $2)
-                           ON CONFLICT (key) DO UPDATE SET value = $2"
-          name
+          "INSERT INTO %s VALUES ($1, %s) ON CONFLICT (key) DO UPDATE SET %s"
+          name Aux.value_placeholders Aux.set_placeholders
       in
-      Aux.exec_ db query @@ Aux.encode_pair key value
+      Aux.exec_ db query @@ Aux.encode_row key value
 
     let replace_if_exists key value =
       with_table @@ fun db ->
       let query =
-        sprintf "UPDATE %s SET value = $2 WHERE key = $1 RETURNING 0" name
+        sprintf "UPDATE %s SET %s WHERE key = $1 RETURNING 0" name
+          Aux.set_placeholders
       in
-      Aux.exec db query (Aux.encode_pair key value) >>= function
+      Aux.exec db query (Aux.encode_row key value) >>= function
       | [] -> raise Not_found
       | _ -> Lwt.return_unit
 
@@ -234,22 +263,19 @@ module Functorial = struct
 
     let modify_opt key f =
       with_table @@ fun db ->
-      let query = sprintf "SELECT value FROM %s WHERE key = $1" name in
-      Aux.exec db query [Key.encode key] >>= fun value ->
-      let old_value =
-        match value with [Some v] :: _ -> Some (Value.decode v) | _ -> None
-      in
+      let query = sprintf "SELECT %s FROM %s WHERE key = $1" vkeys_str name in
+      let%lwt rows = Aux.exec db query [Key.encode key] in
+      let old_value = try Some (Aux.decode_row rows) with Not_found -> None in
       let new_value = f old_value in
       match new_value = old_value, new_value with
       | true, _ -> Lwt.return_unit
       | false, Some new_value ->
           let query =
             sprintf
-              "INSERT INTO %s VALUES ($1, $2)
-                               ON CONFLICT (key) DO UPDATE SET value = $2"
-              name
+              "INSERT INTO %s VALUES ($1, %s) ON CONFLICT (key) DO UPDATE SET %s"
+              name Aux.value_placeholders Aux.set_placeholders
           in
-          Aux.exec_ db query @@ Aux.encode_pair key new_value
+          Aux.exec_ db query @@ Aux.encode_row key new_value
       | false, None ->
           let query = sprintf "DELETE FROM %s WHERE key = $1" name in
           Aux.exec_ db query [Key.encode key]
@@ -265,9 +291,12 @@ module Functorial = struct
       match count with
       | Some c when c <= 0L -> Lwt.return_unit
       | _ ->
-          let key_value_of_row = function
-            | [Some key; Some value] -> Key.decode key, Value.decode value
-            | _ -> raise Ocsipersist_error
+          let key_values_of_row = function
+            | [] -> failwith @@ __LOC__
+            | key :: values ->
+                assert (List.length values = List.length Values.columns);
+                ( Key.decode (Aux.of_option ~__LOC__ key)
+                , Values.decode (List.map (Aux.of_option ~__LOC__) values) )
           in
           let query =
             sprintf
@@ -297,14 +326,14 @@ module Functorial = struct
           with_table (fun db -> Aux.exec_opt db query args) >>= fun l ->
           Lwt_list.iter_s
             (fun row ->
-              let k, v = key_value_of_row row in
+              let k, v = key_values_of_row row in
               f k v)
             l
           >>= fun () ->
           if Int64.of_int (List.length l) < limit
           then Lwt.return_unit
           else
-            let last, _ = key_value_of_row @@ list_last l in
+            let last, _ = key_values_of_row @@ list_last l in
             let count =
               Option.map Int64.(fun c -> sub c @@ of_int @@ List.length l) count
             in
@@ -335,6 +364,29 @@ module Functorial = struct
   end
 
   module Column = struct
+    module Single (C : COLUMN) : COLUMNS with type t = C.t = struct
+      type t = C.t
+
+      let columns = ["value", C.column_type]
+      let encode v = [C.encode v]
+
+      let decode = function
+        | [v] -> C.decode v
+        | _ -> failwith "single value expected"
+    end
+
+    module Two (C1 : COLUMN) (C2 : COLUMN) : COLUMNS with type t = C1.t * C2.t =
+    struct
+      type t = C1.t * C2.t
+
+      let columns = ["value1", C1.column_type; "value2", C2.column_type]
+      let encode (v1, v2) = [C1.encode v1; C2.encode v2]
+
+      let decode = function
+        | [v1; v2] -> C1.decode v1, C2.decode v2
+        | _ -> failwith "two values expected"
+    end
+
     module String : COLUMN with type t = string = struct
       type t = string
 

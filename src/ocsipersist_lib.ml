@@ -63,13 +63,23 @@ module Sigs = struct
       val decode : internal -> t
     end
 
+    module type COLUMNS = sig
+      type t
+
+      val columns : (string * string) list (** key, type *)
+      val encode : t -> internal list
+      val decode : internal list -> t
+    end
+
     module Table (T : sig
       val name : string
     end)
     (Key : COLUMN)
-    (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t
+    (Value : COLUMNS) : TABLE with type key = Key.t and type value = Value.t
 
     module Column : sig
+      module Single (C : COLUMN) : COLUMNS with type t = C.t
+      module Two (C1 : COLUMN) (C2 : COLUMN) : COLUMNS with type t = (C1.t * C2.t)
       module String : COLUMN with type t = string
       module Float : COLUMN with type t = float
 
@@ -200,9 +210,9 @@ module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
           let name = name
         end)
         (Column.String)
-        (Column.Marshal (struct
+        (Column.Single (Column.Marshal (struct
           type t = a
-        end))
+        end)))
     in
     Lwt.return (module T : POLYMORPHIC with type value = a)
 
