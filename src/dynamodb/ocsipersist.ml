@@ -199,7 +199,55 @@ module Functorial = struct
       let%lwt response = describe_table table in
       Lwt.return (Option.default 0 @@ DescribeTable.(response.table.item_count))
 
-    let iter ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ = failwith __LOC__
+    let rec iter_rec ~table ?exclusive_start_key ?limit ?lt ?leq f =
+      let projection_expression = kkey ^ ", " ^ vkey in
+      let%lwt response =
+        Dynamodb.scan ?exclusive_start_key ?limit ~projection_expression ~table
+          ()
+      in
+      let completed = ref false in
+      let rec handle_items = function
+        | [] -> Lwt.return_unit
+        | h :: t ->
+            let k, v =
+              try
+                ( Key.decode @@ List.assoc kkey h
+                , Value.decode @@ List.assoc vkey h )
+              with Not_found -> failwith __LOC__
+            in
+            completed :=
+              Option.map_default (fun lt -> k >= lt) false lt
+              || Option.map_default (fun leq -> k > leq) false leq;
+            if !completed
+            then Lwt.return_unit
+            else
+              let%lwt () = f k v in
+              handle_items t
+      in
+      let items = response.Dynamodb.Scan.items in
+      let%lwt () = handle_items items in
+      match response.Dynamodb.Scan.last_evaluated_key with
+      | None -> Lwt.return_unit
+      | Some last_evaluated_key ->
+          let limit =
+            Option.map
+              (fun l -> l - List.length response.Dynamodb.Scan.items)
+              limit
+          and exclusive_start_key = kkey, last_evaluated_key in
+          iter_rec ~table ~exclusive_start_key ?limit ?lt ?leq f
+
+    let iter ?count ?gt ?geq ?lt ?leq f =
+      match geq with
+      | Some _ ->
+          failwith @@ __LOC__ ^ ": iter with ?geq is not supported by DynamoDB"
+      | None ->
+          let exclusive_start_key =
+            Option.map (fun k -> kkey, Key.encode k) gt
+          in
+          let limit = Option.map Int64.to_int count in
+          with_table @@ fun table ->
+          iter_rec ~table ?exclusive_start_key ?limit ?lt ?leq f
+
     let fold ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ = failwith __LOC__
     let iter_block ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ = failwith __LOC__
 

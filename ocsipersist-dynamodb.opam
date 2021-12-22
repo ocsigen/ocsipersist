@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name:         "ocsipersist-dynamodb"
-version:      "1.0.1"
+version:      "1.0.2"
 authors:      "The Ocsigen team <dev@ocsigen.org>"
 maintainer:   "Jan Rochel <jan@besport.com>"
 license:      "LGPL-2.1-only with OCaml-LGPL-linking-exception"
@@ -19,5 +19,5 @@ depends: [
   "xml-light"
   "ocsigenserver" {>= "3.0.0"}
   "ocsipersist-lib"
-  "bs-aws"
+  "bs-aws" {>= "6.1.0.2"}
 ]
