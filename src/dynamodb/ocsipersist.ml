@@ -248,6 +248,9 @@ module Functorial = struct
           with_table @@ fun table ->
           iter_rec ~table ?exclusive_start_key ?limit ?lt ?leq f
 
+    let iter_batch ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
+      failwith "Ocsipersist.iter_batch not implemented for DynamoDB"
+
     let fold ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ = failwith __LOC__
     let iter_block ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ = failwith __LOC__
 
