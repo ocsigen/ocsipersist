@@ -208,7 +208,12 @@ module Functorial = struct
       | [Some value] :: _ -> Lwt.return (Value.decode value)
       | _ -> Lwt.fail Not_found
 
+    let debug () =
+      prerr_endline @@ String.concat "\n"
+      @@ (("COOKIE " ^ name) :: Ocsipersist_lib.backtrace_lwt 1)
+
     let add key value =
+      debug ();
       with_table @@ fun db ->
       let query =
         sprintf
@@ -219,6 +224,7 @@ module Functorial = struct
       Aux.exec_ db query @@ Aux.encode_pair key value
 
     let replace_if_exists key value =
+      debug ();
       with_table @@ fun db ->
       let query =
         sprintf "UPDATE %s SET value = $2 WHERE key = $1 RETURNING 0" name
@@ -228,11 +234,13 @@ module Functorial = struct
       | _ -> Lwt.return_unit
 
     let remove key =
+      debug ();
       with_table @@ fun db ->
       let query = sprintf "DELETE FROM %s WHERE key = $1" name in
       Aux.exec_ db query [Key.encode key]
 
     let modify_opt key f =
+      debug ();
       with_table @@ fun db ->
       let query = sprintf "SELECT value FROM %s WHERE key = $1" name in
       Aux.exec db query [Key.encode key] >>= fun value ->

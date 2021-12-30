@@ -3,8 +3,9 @@
  (public_name ocsipersist-lib)
  (modules ocsipersist_lib)
  (wrapped false)
- (libraries lwt)
- (preprocess (pps lwt_ppx)))
+ (libraries lwt re)
+ (preprocess
+  (pps lwt_ppx)))
 
 (library
  (public_name ocsipersist)
