@@ -336,6 +336,8 @@ module Registration = struct
     | [] -> d
     | Xml.Element ("delayloading", [("val", ("true" | "1"))], []) :: ll ->
         parse_global_config (store, ocsidbm, true) ll
+    | Xml.Element ("delayloading", [("val", ("false" | "0"))], []) :: ll ->
+        parse_global_config (store, ocsidbm, false) ll
     | Xml.Element ("store", [("dir", s)], []) :: ll ->
         if store = None
         then parse_global_config (Some s, ocsidbm, delayloading) ll
