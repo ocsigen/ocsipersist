@@ -123,10 +123,10 @@ module Store = struct
     Lwt.catch
       (fun () -> Aux.db_get pvname >>= fun _ -> Lwt.return ())
       (function
-        | Not_found ->
-            default () >>= fun def ->
-            Aux.db_replace pvname (Marshal.to_string def [])
-        | e -> Lwt.fail e)
+         | Not_found ->
+             default () >>= fun def ->
+             Aux.db_replace pvname (Marshal.to_string def [])
+         | e -> Lwt.fail e)
     >>= fun () -> Lwt.return pvname
 
   let make_persistent_lazy ~store ~name ~default =
@@ -158,11 +158,12 @@ module Functorial = struct
     val decode : internal -> t
   end
 
-  module Table (T : sig
-    val name : string
-  end)
-  (Key : COLUMN)
-  (Value : COLUMN) :
+  module Table
+      (T : sig
+         val name : string
+       end)
+      (Key : COLUMN)
+      (Value : COLUMN) :
     Ocsipersist_lib.Sigs.TABLE with type key = Key.t and type value = Value.t =
   struct
     type key = Key.t
@@ -395,12 +396,12 @@ module Functorial = struct
     let length () = with_table @@ db_length name
 
     module Variable = Ocsipersist_lib.Variable (struct
-      type k = key
-      type v = value
+        type k = key
+        type v = value
 
-      let find = find
-      let add = add
-    end)
+        let find = find
+        let add = add
+      end)
   end
 
   module Column = struct
@@ -421,8 +422,8 @@ module Functorial = struct
     end
 
     module Marshal (C : sig
-      type t
-    end) : COLUMN with type t = C.t = struct
+        type t
+      end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "blob"

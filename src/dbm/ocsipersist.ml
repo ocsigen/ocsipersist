@@ -27,59 +27,59 @@ module Db = struct
   let try_connect sname =
     Lwt.catch
       (fun () ->
-        let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
-        Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
-        Lwt.return socket)
+         let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
+         Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
+         Lwt.return socket)
       (fun _ ->
-        Lwt_log.ign_warning_f ~section
-          "Launching a new Ocsidbm process: %s on directory %s." !Config.ocsidbm
-          !Config.directory;
-        let param = [|!Config.ocsidbm; !Config.directory|] in
-        let child () =
-          let log =
-            Unix.openfile
-              (Ocsigen_messages.error_log_path ())
-              [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND]
-              0o640
-          in
-          Unix.dup2 log Unix.stderr;
-          Unix.close log;
-          let devnull = Unix.openfile "/dev/null" [Unix.O_WRONLY] 0 in
-          Unix.dup2 devnull Unix.stdout;
-          Unix.close devnull;
-          Unix.close Unix.stdin;
-          Unix.execvp !Config.ocsidbm param
-        in
-        let pid = Lwt_unix.fork () in
-        if pid = 0
-        then
-          if (* double fork *)
-             Lwt_unix.fork () = 0
-          then child ()
-          else Aux.sys_exit 0
-        else
-          Lwt_unix.waitpid [] pid >>= fun _ ->
-          Lwt_unix.sleep 1.1 >>= fun () ->
-          let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
-          Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
-          Lwt.return socket)
+         Lwt_log.ign_warning_f ~section
+           "Launching a new Ocsidbm process: %s on directory %s."
+           !Config.ocsidbm !Config.directory;
+         let param = [|!Config.ocsidbm; !Config.directory|] in
+         let child () =
+           let log =
+             Unix.openfile
+               (Ocsigen_messages.error_log_path ())
+               [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND]
+               0o640
+           in
+           Unix.dup2 log Unix.stderr;
+           Unix.close log;
+           let devnull = Unix.openfile "/dev/null" [Unix.O_WRONLY] 0 in
+           Unix.dup2 devnull Unix.stdout;
+           Unix.close devnull;
+           Unix.close Unix.stdin;
+           Unix.execvp !Config.ocsidbm param
+         in
+         let pid = Lwt_unix.fork () in
+         if pid = 0
+         then
+           if (* double fork *)
+              Lwt_unix.fork () = 0
+           then child ()
+           else Aux.sys_exit 0
+         else
+           Lwt_unix.waitpid [] pid >>= fun _ ->
+           Lwt_unix.sleep 1.1 >>= fun () ->
+           let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
+           Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
+           Lwt.return socket)
 
   let rec get_indescr i =
     Lwt.catch
       (fun () -> try_connect (!Config.directory ^ "/" ^ socketname))
       (fun e ->
-        if i = 0
-        then (
-          Lwt_log.ign_error_f ~section
-            "Cannot connect to Ocsidbm. Will continue without persistent session support. Error message is: %s .Have a look at the logs to see if there is an error message from the Ocsidbm process."
-            (match e with
-            | Unix.Unix_error (a, b, c) ->
-                Printf.sprintf "%a in %s(%s)"
-                  (fun () -> Unix.error_message)
-                  a b c
-            | _ -> Printexc.to_string e);
-          Lwt.fail e)
-        else Lwt_unix.sleep 2.1 >>= fun () -> get_indescr (i - 1))
+         if i = 0
+         then (
+           Lwt_log.ign_error_f ~section
+             "Cannot connect to Ocsidbm. Will continue without persistent session support. Error message is: %s .Have a look at the logs to see if there is an error message from the Ocsidbm process."
+             (match e with
+             | Unix.Unix_error (a, b, c) ->
+                 Printf.sprintf "%a in %s(%s)"
+                   (fun () -> Unix.error_message)
+                   a b c
+             | _ -> Printexc.to_string e);
+           Lwt.fail e)
+         else Lwt_unix.sleep 2.1 >>= fun () -> get_indescr (i - 1))
 
   let send =
     let previous = ref (Lwt.return Ok) in
@@ -151,10 +151,10 @@ module Store = struct
     Lwt.catch
       (fun () -> Db.get pvname >>= fun _ -> Lwt.return ())
       (function
-        | Not_found ->
-            default () >>= fun def ->
-            Db.replace pvname (Marshal.to_string def [])
-        | e -> Lwt.fail e)
+         | Not_found ->
+             default () >>= fun def ->
+             Db.replace pvname (Marshal.to_string def [])
+         | e -> Lwt.fail e)
     >>= fun () -> Lwt.return pvname
 
   let make_persistent_lazy ~store ~name ~default =
@@ -186,11 +186,12 @@ module Functorial = struct
     val decode : string -> t
   end
 
-  module Table (T : sig
-    val name : string
-  end)
-  (Key : COLUMN)
-  (Value : COLUMN) :
+  module Table
+      (T : sig
+         val name : string
+       end)
+      (Key : COLUMN)
+      (Value : COLUMN) :
     Ocsipersist_lib.Sigs.TABLE with type key = Key.t and type value = Value.t =
   struct
     type key = Key.t
@@ -250,12 +251,12 @@ module Functorial = struct
       Db.length name
 
     module Variable = Ocsipersist_lib.Variable (struct
-      type k = key
-      type v = value
+        type k = key
+        type v = value
 
-      let find = find
-      let add = add
-    end)
+        let find = find
+        let add = add
+      end)
   end
 
   module Column = struct
@@ -276,8 +277,8 @@ module Functorial = struct
     end
 
     module Marshal (C : sig
-      type t
-    end) : COLUMN with type t = C.t = struct
+        type t
+      end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "_"
@@ -327,7 +328,6 @@ type 'value table = 'value Polymorphic.table
            aux first firstl >>=
            (fun () -> Unix.close socket; return ()))
          (fun e -> Unix.close socket; Lwt.fail e))))
-
 *)
 
 module Registration = struct

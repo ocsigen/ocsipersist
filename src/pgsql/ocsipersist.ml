@@ -62,13 +62,13 @@ let use_pool f =
   Lwt.catch
     (fun () -> f db)
     (function
-      | PGOCaml.Error msg as e ->
-          Lwt_log.ign_error_f ~section "postgresql protocol error: %s" msg;
-          PGOCaml.close db >>= fun () -> Lwt.fail e
-      | Lwt.Canceled as e ->
-          Lwt_log.ign_error ~section "thread canceled";
-          PGOCaml.close db >>= fun () -> Lwt.fail e
-      | e -> Lwt.fail e)
+       | PGOCaml.Error msg as e ->
+           Lwt_log.ign_error_f ~section "postgresql protocol error: %s" msg;
+           PGOCaml.close db >>= fun () -> Lwt.fail e
+       | Lwt.Canceled as e ->
+           Lwt_log.ign_error ~section "thread canceled";
+           PGOCaml.close db >>= fun () -> Lwt.fail e
+       | e -> Lwt.fail e)
 
 (* escapes characters that are not in the range of 0x20..0x7e;
    this is to meet PostgreSQL's format requirements for text fields
@@ -140,10 +140,10 @@ let prepare db query =
   (* Have we prepared this statement already?  If not, do so. *)
   let is_prepared = Hashtbl.mem hashtbl name in
   (if is_prepared
-  then Lwt.return ()
-  else
-    PGOCaml.prepare db ~name ~query ()
-    >> Lwt.return @@ Hashtbl.add hashtbl name ())
+   then Lwt.return ()
+   else
+     PGOCaml.prepare db ~name ~query ()
+     >> Lwt.return @@ Hashtbl.add hashtbl name ())
   >>= fun () -> Lwt.return name
 
 let exec db query params =
@@ -164,11 +164,12 @@ module Functorial = struct
     val decode : internal -> t
   end
 
-  module Table (T : sig
-    val name : string
-  end)
-  (Key : COLUMN)
-  (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t =
+  module Table
+      (T : sig
+         val name : string
+       end)
+      (Key : COLUMN)
+      (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t =
   struct
     type key = Key.t
     type value = Value.t
@@ -327,12 +328,12 @@ module Functorial = struct
       failwith "Ocsipersist.iter_block: not implemented"
 
     module Variable = Ocsipersist_lib.Variable (struct
-      type k = key
-      type v = value
+        type k = key
+        type v = value
 
-      let find = find
-      let add = add
-    end)
+        let find = find
+        let add = add
+      end)
   end
 
   module Column = struct
@@ -353,8 +354,8 @@ module Functorial = struct
     end
 
     module Marshal (C : sig
-      type t
-    end) : COLUMN with type t = C.t = struct
+        type t
+      end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "bytea"
