@@ -19,6 +19,7 @@
  (name ocsipersist_pgsql_config)
  (public_name ocsipersist-pgsql-config)
  (modules ocsipersist_config)
+ (wrapped false)
  (libraries xml-light ocsigenserver ocsipersist_pgsql))
 
 (documentation

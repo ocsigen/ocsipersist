@@ -38,6 +38,7 @@
  (name ocsipersist_dbm_config)
  (public_name ocsipersist-dbm-config)
  (modules ocsipersist_config)
+ (wrapped false)
  (libraries xml-light ocsipersist_dbm ocsigenserver))
 
 ; DBM server:

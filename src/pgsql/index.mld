@@ -1,47 +1,18 @@
 {0 ocsipersist-pgsql}
 
+PostgreSQL backend for Ocsipersist.
+For the API documentation see OPAM package {{:../ocsipersist/Ocsipersist/index.html}ocsipersist}.
+This page describes how to configure the PostgreSQL backend.
+
 {1 Using as a library}
-For the API documentation see OPAM package [ocsipersist].
 
-If you are not using Ocsigen Server, you can configure with:
-{[
-Ocsipersist_settings.set_host
-Ocsipersist_settings.set_port
-Ocsipersist_settings.set_database
-Ocsipersist_settings.set_user
-Ocsipersist_settings.set_password
-Ocsipersist_settings.set_connexion_pool_size
-Ocsipersist_settings.set_unix_domain_socket_dir
-]}
+If you are not using Ocsigen Server's configuration file,
+add library [ocsipersist-pgsql.settings] in your Dune file, and
+use module {!Ocsipersist_settings}
+to configure the storage file. 
 
-{1 Using with Ocsigen Server: ocsipersist-psql-config}
+{1 Using with Ocsigen Server: ocsipersist-pgsql-config}
 
-For the API documentation see OPAM package [ocsipersist].
-
-Here we document the configuration options of the ocsigenserver extension.
-All attributes of the [database] tag are optional.
-
-One can either define a host to connect to:
-{[
-<extension findlib-package="ocsipersist-pgsql-config">
-  <database
-     host="localhost"
-     port="3000"
-     user="ocsipersist"
-     password="<secret>"
-     size_conn_pool = "16"
-  />
-</extension>
-]}
-
-Or a UNIX domain socket:
-{[
-<extension findlib-package="ocsipersist-pgsql-config">
-  <database
-    unix_domain_socket_dir = "pgsql_socket"
-    user="ocsipersist"
-    password="<secret>"
-    size_conn_pool = "16"
-  />
-</extension>
-]}
+If you want to configure Ocsipersist-pgsql from Ocsigen Server's
+configuration file, use package
+{{:../ocsipersist-pgsql-config/Ocsipersist_config/index.html}ocsipersist-pgsql-config}.

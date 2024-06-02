@@ -19,6 +19,7 @@
  (name ocsipersist_sqlite_config)
  (public_name ocsipersist-sqlite-config)
  (modules ocsipersist_config)
+ (wrapped false)
  (libraries xml-light ocsigenserver ocsipersist_sqlite))
 
 (documentation

@@ -1,22 +1,18 @@
 {0 ocsipersist-sqlite}
+
+SQLite backend for Ocsipersist.
+For the API documentation see OPAM package {{:../ocsipersist/Ocsipersist/index.html}ocsipersist}.
+This page describes how to configure the SQLite backend.
+
 {1 Using as a library}
 
-For the API documentation see OPAM package [ocsipersist].
+If you are not using Ocsigen Server's configuration file,
+add library [ocsipersist-sqlite.settings] in your Dune file, and
+use module {!Ocsipersist_settings} to configure the storage file. 
 
-If you are not using Ocsigen Server, you can configure the storage file with
-{[
-Ocsipersist_settings.set_db_file
-]}
 
 {1 Using with Ocsigen Server: ocsipersist-sqlite-config}
 
-If you are using Ocsipersist with Ocsigen Server with a configuration file,
-install package [ocsipersist-sqlite-config] and
-use the following configuration tags.
-All sub-tags of the [extension] tag are optional.
-
-{[
-<extension findlib-package="ocsipersist-sqlite-config">
-  <database file="data/ocsidb"/>
-</extension>
-]}
+If you want to configure Ocsipersist-sqlite from Ocsigen Server's
+configuration file, use package
+{{:../ocsipersist-sqlite-config/Ocsipersist_config/index.html}ocsipersist-sqlite-config}.
