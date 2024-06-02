@@ -437,6 +437,7 @@ module Functorial = struct
 end
 
 module Polymorphic = Ocsipersist_lib.Polymorphic (Functorial)
+module Ref = Ocsipersist_lib.Ref (Store)
 
 type 'value table = 'value Polymorphic.table
 

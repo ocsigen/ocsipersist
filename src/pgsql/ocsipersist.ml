@@ -414,6 +414,8 @@ module Store = struct
     exec db query [Key p.name; Value v] >> Lwt.return ()
 end
 
+module Ref = Ocsipersist_lib.Ref (Store)
+
 type store = Store.store
 type 'a variable = 'a Store.t
 

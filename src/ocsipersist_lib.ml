@@ -151,6 +151,29 @@ module Sigs = struct
     *)
   end
 
+  module type REF = sig
+    (** Persistent references for OCaml *)
+
+    type 'a t
+    (** The type of (persistent or not) references *)
+
+    val ref : ?persistent:string -> 'a -> 'a t
+    (** [ref ?persistent default] creates a reference.
+        If optional parameter [?persistent] is absent,
++       the reference will not be persistent (implemented using OCaml references).
++       Otherwise, the value of [persistent] will be used as key for the
+   +    value in the persistent reference table.
+        If the reference already exists, the current value is kept.
++       Be careful to change this name every time you change the type of the
++       value. *)
+
+    val get : 'a t -> 'a Lwt.t
+    (** Get the value of a reference *)
+
+    val set : 'a t -> 'a -> unit Lwt.t
+    (** Set the value of a reference *)
+  end
+
   module type STORE = sig
     type 'a t
     (** Type of persistent data *)
@@ -262,4 +285,33 @@ struct
       T.add name d >>= fun () -> Lwt.return d
 
   let set {name} = T.add name
+end
+
+module Ref (Store : STORE) = struct
+  let store = lazy (Store.open_store "__ocsipersist_ref_store__")
+
+  type 'a t = Ref of 'a ref | Per of 'a Store.t Lwt.t
+
+  let ref ?persistent v =
+    match persistent with
+    | None -> Ref (ref v)
+    | Some name ->
+        Per
+          (let%lwt store = Lazy.force store in
+           Store.make_persistent ~store ~name ~default:v)
+
+  let get = function
+    | Ref r -> Lwt.return !r
+    | Per r ->
+        let%lwt r = r in
+        Store.get r
+
+  let set r v =
+    match r with
+    | Ref r ->
+        r := v;
+        Lwt.return_unit
+    | Per r ->
+        let%lwt r = r in
+        Store.set r v
 end

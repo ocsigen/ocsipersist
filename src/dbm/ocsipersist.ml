@@ -282,6 +282,7 @@ module Functorial = struct
 end
 
 module Polymorphic = Ocsipersist_lib.Polymorphic (Functorial)
+module Ref = Ocsipersist_lib.Ref (Store)
 
 type 'value table = 'value Polymorphic.table
 
@@ -322,6 +323,7 @@ type 'value table = 'value Polymorphic.table
            (fun () -> Unix.close socket; return ()))
          (fun e -> Unix.close socket; Lwt.fail e))))
 *)
+
 let init () =
   if !Ocsipersist_settings.delay_loading
   then
