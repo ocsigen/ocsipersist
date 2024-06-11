@@ -4,13 +4,14 @@
  (modules ocsipersist_lib)
  (wrapped false)
  (libraries lwt)
- (preprocess (pps lwt_ppx)))
+ (preprocess
+  (pps lwt_ppx)))
 
 (library
+ (name ocsipersist)
  (public_name ocsipersist)
  (virtual_modules ocsipersist)
  (modules ocsipersist)
- (wrapped false)
  (libraries ocsipersist_lib lwt))
 
 (env

@@ -1,9 +1,26 @@
 (library
  (name ocsipersist_sqlite)
- (public_name ocsipersist.sqlite)
+ (public_name ocsipersist-sqlite)
  (implements ocsipersist)
- (libraries sqlite3 lwt_log xml-light ocsigenserver ocsipersist_lib)
- (optional))
+ (modules ocsipersist)
+ (libraries sqlite3 lwt_log ocsipersist_lib ocsipersist_sqlite_settings))
+
+; Configuration functions (part of ocsipersist-sqlite package):
+
+(library
+ (name ocsipersist_sqlite_settings)
+ (public_name ocsipersist-sqlite.settings)
+ (wrapped false)
+ (modules ocsipersist_settings))
+
+; Configuration through Ocsigen Server config file (separate package):
+
+(library
+ (name ocsipersist_sqlite_config)
+ (public_name ocsipersist-sqlite-config)
+ (modules ocsipersist_config)
+ (wrapped false)
+ (libraries xml-light ocsigenserver ocsipersist_sqlite))
 
 (documentation
  (package ocsipersist-sqlite)

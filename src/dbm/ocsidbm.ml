@@ -47,10 +47,10 @@ let errlog s =
 (** Internal functions: storage in files using DBM *)
 
 module Tableoftables = Map.Make (struct
-  type t = string
+    type t = string
 
-  let compare = compare
-end)
+    let compare = compare
+  end)
 
 let tableoftables = ref Tableoftables.empty
 
@@ -138,8 +138,8 @@ let db_length t =
   let rec aux f n =
     Lwt.catch
       (fun () ->
-        ignore (f table);
-        Lwt.pause () >>= fun () -> aux Dbm.nextkey (n + 1))
+         ignore (f table);
+         Lwt.pause () >>= fun () -> aux Dbm.nextkey (n + 1))
       (function Not_found -> Lwt.return n | e -> Lwt.fail e)
   in
   aux Dbm.firstkey 0
@@ -189,34 +189,32 @@ let execute outch =
   function
   | Get (t, k) ->
       handle_errors (fun () ->
-          try send outch (Value (db_get t k))
-          with Not_found -> send outch Dbm_not_found)
+        try send outch (Value (db_get t k))
+        with Not_found -> send outch Dbm_not_found)
   | Remove (t, k) -> handle_errors (fun () -> db_remove t k; send outch Ok)
   | Replace (t, k, v) ->
       handle_errors (fun () -> db_replace t k v; send outch Ok)
   | Replace_if_exists (t, k, v) ->
       handle_errors (fun () ->
-          try
-            ignore (db_get t k);
-            db_replace t k v;
-            send outch Ok
-          with Not_found -> send outch Dbm_not_found)
+        try
+          ignore (db_get t k);
+          db_replace t k v;
+          send outch Ok
+        with Not_found -> send outch Dbm_not_found)
   | Firstkey t ->
       handle_errors (fun () ->
-          try send outch (Key (db_firstkey t))
-          with Not_found -> send outch End)
+        try send outch (Key (db_firstkey t)) with Not_found -> send outch End)
   | Nextkey t ->
       handle_errors (fun () ->
-          try send outch (Key (db_nextkey t)) with Not_found -> send outch End)
+        try send outch (Key (db_nextkey t)) with Not_found -> send outch End)
   | Length t ->
       handle_errors (fun () ->
-          Lwt.catch
-            (fun () ->
-              db_length t >>= fun i ->
-              send outch (Value (Marshal.to_string i [])))
-            (function
-              | Not_found -> send outch Dbm_not_found
-              | e -> send outch (Error e)))
+        Lwt.catch
+          (fun () ->
+             db_length t >>= fun i ->
+             send outch (Value (Marshal.to_string i [])))
+          (function
+             | Not_found -> send outch Dbm_not_found | e -> send outch (Error e)))
 
 let nb_clients = ref 0
 
@@ -246,13 +244,13 @@ let _ =
     (let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
      Lwt.catch
        (fun () ->
-         Lwt_unix.bind socket (Unix.ADDR_UNIX (directory ^ "/" ^ socketname)))
+          Lwt_unix.bind socket (Unix.ADDR_UNIX (directory ^ "/" ^ socketname)))
        (fun _exn ->
-         errlog
-           ("Please make sure that the directory " ^ directory
-          ^ " exists, writable for ocsidbm, and no other ocsidbm process is running on the same directory. If not, remove the file "
-          ^ directory ^ "/" ^ socketname);
-         the_end 1)
+          errlog
+            ("Please make sure that the directory " ^ directory
+           ^ " exists, writable for ocsidbm, and no other ocsidbm process is running on the same directory. If not, remove the file "
+           ^ directory ^ "/" ^ socketname);
+          the_end 1)
      >>= fun () ->
      Lwt_unix.listen socket 20;
      (* Done in ocsipersist.ml
@@ -316,5 +314,4 @@ let _ =
         ) >>=
         f
       in ignore (f ())
-
 *)

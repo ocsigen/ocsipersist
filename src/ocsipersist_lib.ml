@@ -13,8 +13,8 @@ module Sigs = struct
     val modify_opt : key -> (value option -> value option) -> unit Lwt.t
     val length : unit -> int Lwt.t
 
-    val iter
-      :  ?count:int64
+    val iter :
+       ?count:int64
       -> ?gt:key
       -> ?geq:key
       -> ?lt:key
@@ -22,8 +22,8 @@ module Sigs = struct
       -> (key -> value -> unit Lwt.t)
       -> unit Lwt.t
 
-    val fold
-      :  ?count:int64
+    val fold :
+       ?count:int64
       -> ?gt:key
       -> ?geq:key
       -> ?lt:key
@@ -32,8 +32,8 @@ module Sigs = struct
       -> 'a
       -> 'a Lwt.t
 
-    val iter_block
-      :  ?count:int64
+    val iter_block :
+       ?count:int64
       -> ?gt:key
       -> ?geq:key
       -> ?lt:key
@@ -41,8 +41,8 @@ module Sigs = struct
       -> (key -> value -> unit)
       -> unit Lwt.t
 
-    val iter_batch
-      :  ?count:int64
+    val iter_batch :
+       ?count:int64
       -> ?gt:key
       -> ?geq:key
       -> ?lt:key
@@ -72,19 +72,20 @@ module Sigs = struct
       val decode : internal -> t
     end
 
-    module Table (T : sig
-      val name : string
-    end)
-    (Key : COLUMN)
-    (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t
+    module Table
+        (T : sig
+           val name : string
+         end)
+        (Key : COLUMN)
+        (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t
 
     module Column : sig
       module String : COLUMN with type t = string
       module Float : COLUMN with type t = float
 
       module Marshal (C : sig
-        type t
-      end) : COLUMN with type t = C.t
+          type t
+        end) : COLUMN with type t = C.t
     end
   end
 
@@ -128,8 +129,8 @@ module Sigs = struct
         is very old (at least 9 223 372 036 854 775 807 insertions).
     *)
 
-    val fold_step
-      :  (string -> 'a -> 'b -> 'b Lwt.t)
+    val fold_step :
+       (string -> 'a -> 'b -> 'b Lwt.t)
       -> 'a table
       -> 'b
       -> 'b Lwt.t
@@ -150,6 +151,29 @@ module Sigs = struct
     *)
   end
 
+  module type REF = sig
+    (** Persistent references for OCaml *)
+
+    type 'a t
+    (** The type of (persistent or not) references *)
+
+    val ref : ?persistent:string -> 'a -> 'a t
+    (** [ref ?persistent default] creates a reference.
+        If optional parameter [?persistent] is absent,
++       the reference will not be persistent (implemented using OCaml references).
++       Otherwise, the value of [persistent] will be used as key for the
+   +    value in the persistent reference table.
+        If the reference already exists, the current value is kept.
++       Be careful to change this name every time you change the type of the
++       value. *)
+
+    val get : 'a t -> 'a Lwt.t
+    (** Get the value of a reference *)
+
+    val set : 'a t -> 'a -> unit Lwt.t
+    (** Set the value of a reference *)
+  end
+
   module type STORE = sig
     type 'a t
     (** Type of persistent data *)
@@ -167,8 +191,8 @@ module Sigs = struct
         from database, or create it with the default value [default] if it
         does not exist. *)
 
-    val make_persistent_lazy
-      :  store:store
+    val make_persistent_lazy :
+       store:store
       -> name:string
       -> default:(unit -> 'a)
       -> 'a t Lwt.t
@@ -176,8 +200,8 @@ module Sigs = struct
         if needed
     *)
 
-    val make_persistent_lazy_lwt
-      :  store:store
+    val make_persistent_lazy_lwt :
+       store:store
       -> name:string
       -> default:(unit -> 'a Lwt.t)
       -> 'a t Lwt.t
@@ -210,8 +234,8 @@ module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
         end)
         (Column.String)
         (Column.Marshal (struct
-          type t = a
-        end))
+             type t = a
+           end))
     in
     Lwt.return (module T : POLYMORPHIC with type value = a)
 
@@ -238,12 +262,12 @@ module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
 end
 
 module Variable (T : sig
-  type k
-  type v
+    type k
+    type v
 
-  val find : k -> v Lwt.t
-  val add : k -> v -> unit Lwt.t
-end) =
+    val find : k -> v Lwt.t
+    val add : k -> v -> unit Lwt.t
+  end) =
 struct
   type t = {name : T.k; default : unit -> T.v Lwt.t}
 
@@ -261,4 +285,33 @@ struct
       T.add name d >>= fun () -> Lwt.return d
 
   let set {name} = T.add name
+end
+
+module Ref (Store : STORE) = struct
+  let store = lazy (Store.open_store "__ocsipersist_ref_store__")
+
+  type 'a t = Ref of 'a ref | Per of 'a Store.t Lwt.t
+
+  let ref ?persistent v =
+    match persistent with
+    | None -> Ref (ref v)
+    | Some name ->
+        Per
+          (let%lwt store = Lazy.force store in
+           Store.make_persistent ~store ~name ~default:v)
+
+  let get = function
+    | Ref r -> Lwt.return !r
+    | Per r ->
+        let%lwt r = r in
+        Store.get r
+
+  let set r v =
+    match r with
+    | Ref r ->
+        r := v;
+        Lwt.return_unit
+    | Per r ->
+        let%lwt r = r in
+        Store.set r v
 end

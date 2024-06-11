@@ -7,17 +7,41 @@
 
 (library
  (name ocsipersist_dbm)
- (public_name ocsipersist.dbm)
+ (public_name ocsipersist-dbm)
  (implements ocsipersist)
- (modules ocsipersist)
+ (modules
+  :standard
+  \
+  ocsipersist_config
+  ocsidbm
+  ocsidbmtypes
+  ocsipersist_settings)
  (libraries
   dbm
   lwt_log
-  xml-light
   ocsipersist_dbmtypes
-  ocsigenserver
-  ocsipersist_lib)
- (optional))
+  ocsipersist_lib
+  ocsipersist_dbm_settings))
+
+; Configuration functions (part of ocsipersist-dbm package):
+
+(library
+ (name ocsipersist_dbm_settings)
+ (public_name ocsipersist-dbm.settings)
+ (wrapped false)
+ (modules ocsipersist_settings)
+ (libraries lwt lwt.unix))
+
+; Configuration through Ocsigen Server config file:
+
+(library
+ (name ocsipersist_dbm_config)
+ (public_name ocsipersist-dbm-config)
+ (modules ocsipersist_config)
+ (wrapped false)
+ (libraries xml-light ocsipersist_dbm ocsigenserver))
+
+; DBM server:
 
 (executable
  (public_name ocsidbm)

@@ -9,7 +9,7 @@ open Printf
 module Aux = struct
   (* This reference is overwritten when the init function (at the end of the file)
    is run, which occurs when the extension is loaded *)
-  let db_file = ref (Ocsigen_config.get_datadir () ^ "/ocsidb")
+  let db_file = Ocsipersist_settings.db_file
   let yield () = Thread.yield ()
 
   let rec bind_safely stmt = function
@@ -41,7 +41,7 @@ module Aux = struct
     in
     Lwt_preemptive.detach aux ()
 
-  (* Référence indispensable pour les codes de retours et leur signification :
+  (* RÃ©fÃ©rence indispensable pour les codes de retours et leur signification :
    * http://sqlite.org/capi3ref.html
    * Langage compris par SQLite : http://www.sqlite.org/lang.html
    *)
@@ -123,10 +123,10 @@ module Store = struct
     Lwt.catch
       (fun () -> Aux.db_get pvname >>= fun _ -> Lwt.return ())
       (function
-        | Not_found ->
-            default () >>= fun def ->
-            Aux.db_replace pvname (Marshal.to_string def [])
-        | e -> Lwt.fail e)
+         | Not_found ->
+             default () >>= fun def ->
+             Aux.db_replace pvname (Marshal.to_string def [])
+         | e -> Lwt.fail e)
     >>= fun () -> Lwt.return pvname
 
   let make_persistent_lazy ~store ~name ~default =
@@ -158,11 +158,12 @@ module Functorial = struct
     val decode : internal -> t
   end
 
-  module Table (T : sig
-    val name : string
-  end)
-  (Key : COLUMN)
-  (Value : COLUMN) :
+  module Table
+      (T : sig
+         val name : string
+       end)
+      (Key : COLUMN)
+      (Value : COLUMN) :
     Ocsipersist_lib.Sigs.TABLE with type key = Key.t and type value = Value.t =
   struct
     type key = Key.t
@@ -395,12 +396,12 @@ module Functorial = struct
     let length () = with_table @@ db_length name
 
     module Variable = Ocsipersist_lib.Variable (struct
-      type k = key
-      type v = value
+        type k = key
+        type v = value
 
-      let find = find
-      let add = add
-    end)
+        let find = find
+        let add = add
+      end)
   end
 
   module Column = struct
@@ -421,8 +422,8 @@ module Functorial = struct
     end
 
     module Marshal (C : sig
-      type t
-    end) : COLUMN with type t = C.t = struct
+        type t
+      end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "blob"
@@ -436,31 +437,10 @@ module Functorial = struct
 end
 
 module Polymorphic = Ocsipersist_lib.Polymorphic (Functorial)
+module Ref = Ocsipersist_lib.Ref (Store)
 
 type 'value table = 'value Polymorphic.table
 
-module Registration = struct
-  let parse_global_config = function
-    | [] -> None
-    | [Xml.Element ("database", [("file", s)], [])] -> Some s
-    | _ ->
-        raise
-          (Ocsigen_extensions.Error_in_config_file
-             "Unexpected content inside Ocsipersist config")
-
-  let init config =
-    Aux.db_file := Ocsigen_config.get_datadir () ^ "/ocsidb";
-    (match parse_global_config config with
-    | None -> ()
-    | Some d -> Aux.db_file := d);
-    (* We check that we can access the database *)
-    try Lwt_main.run (Aux.exec_safely (fun _ -> ()))
-    with e ->
-      Ocsigen_messages.errlog
-        (Printf.sprintf
-           "Error opening database file '%s' when registering Ocsipersist. Check that the directory exists, and that Ocsigen has enough rights"
-           !Aux.db_file);
-      raise e
-
-  let _ = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun:init ()
-end
+let init () =
+  (* We check that we can access the database *)
+  Lwt_main.run (Aux.exec_safely (fun _ -> ()))

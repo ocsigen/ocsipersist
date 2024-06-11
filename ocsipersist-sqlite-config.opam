@@ -1,11 +1,11 @@
 opam-version: "2.0"
-name:         "ocsipersist-sqlite"
+name:         "ocsipersist-sqlite-config"
 version:      "2.0.0"
 authors:      "The Ocsigen team <dev@ocsigen.org>"
 maintainer:   "Jan Rochel <jan@besport.com>"
 license:      "LGPL-2.1-only with OCaml-LGPL-linking-exception"
-synopsis:     "Persistent key/value storage for OCaml using SQLite"
-description:  "This library provides a SQLite backend for the unified key/value storage frontend as defined in the ocsipersist package."
+synopsis:     "Ocsigen Server configuration file extension for ocsipersist-sqlite"
+description:  "Load this package from Ocsigen Server's configuration file if you want to use the SQLite storage backend."
 
 homepage: "https://github.com/ocsigen/ocsipersist"
 bug-reports: "https://github.com/ocsigen/ocsipersist/issues"
@@ -14,8 +14,7 @@ build:   [ "dune" "build" "-p" name "-j" jobs ]
 
 depends: [
   "dune" {>= "2.9"}
-  "lwt" {>= "4.2.0"}
-  "lwt_log"
-  "ocsipersist" {>= "2.0.0" & < "2.1.0"}
-  "sqlite3"
+  "xml-light"
+  "ocsigenserver" {>= "3.0.0"}
+  "ocsipersist-sqlite" {>= "2.0.0" & < "2.1.0"}
 ]

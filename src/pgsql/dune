@@ -1,9 +1,26 @@
 (library
  (name ocsipersist_pgsql)
- (public_name ocsipersist.pgsql)
+ (public_name ocsipersist-pgsql)
  (implements ocsipersist)
- (libraries pgocaml lwt_log xml-light ocsigenserver ocsipersist_lib)
- (optional))
+ (modules :standard \ ocsipersist_config ocsipersist_settings)
+ (libraries pgocaml lwt_log ocsipersist_lib ocsipersist_pgsql_settings))
+
+; Configuration functions (part of ocsipersist-pgsql package):
+
+(library
+ (name ocsipersist_pgsql_settings)
+ (public_name ocsipersist-pgsql.settings)
+ (wrapped false)
+ (modules ocsipersist_settings))
+
+; Configuration through Ocsigen Server config file (separate package):
+
+(library
+ (name ocsipersist_pgsql_config)
+ (public_name ocsipersist-pgsql-config)
+ (modules ocsipersist_config)
+ (wrapped false)
+ (libraries xml-light ocsigenserver ocsipersist_pgsql))
 
 (documentation
  (package ocsipersist-pgsql)
