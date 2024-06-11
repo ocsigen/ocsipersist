@@ -1,10 +1,10 @@
 opam-version: "2.0"
 name:         "ocsipersist-lib"
-version:      "1.1.0"
+version:      "2.0.0"
 authors:      "The Ocsigen team <dev@ocsigen.org>"
 maintainer:   "Jan Rochel <jan@besport.com>"
 license:      "LGPL-2.1-only with OCaml-LGPL-linking-exception"
-synopsis:     "Persistent key/value storage (for Ocsigen) - support library"
+synopsis:     "Persistent key/value storage for OCaml - support library"
 description:  "This library defines signatures and auxiliary tools for defining backends for the Ocsipersist frontent. Ocsipersist is used pervasively in Eliom/Ocsigen to handle sessions and references. It can be used as an extension for ocsigenserver or as a library. Implementations of the following backends currently exist: DBM, PostgreSQL, SQLite."
 
 homepage: "https://github.com/ocsigen/ocsipersist"

@@ -1,12 +1,27 @@
 {0 ocsipersist-dbm}
 
+The DBM backend uses a server process [ocsidbm].
+
+{1 Using as a library}
+For the API documentation see OPAM package [ocsipersist].
+
+If you are not using Ocsigen Server, you can configure with
+{[
+Ocsipersist_settings.set_delay_loading
+Ocsipersist_settings.set_store
+Ocsipersist_settings.set_ocsidbm
+Ocsipersist_settings.set_error_log_path
+]}
+
+{1 Using with Ocsigen Server: ocsipersist-dbm-config}
+
 For the API documentation see OPAM package [ocsipersist].
 
 Here we document the configuration options of the ocsigenserver extension.
 All sub-tags of the [extension] tag are optional.
 
 {[
-<extension findlib-package="ocsipersist.dbm">
+<extension findlib-package="ocsipersist-dbm-config">
   <delayloading val="false"/>
   <store dir="store"/>
   <ocsidbm name="ocsidbm"/>

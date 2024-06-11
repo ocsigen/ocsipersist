@@ -11,13 +11,7 @@ exception Ocsipersist_error
 
 let socketname = "socket"
 
-module Config = struct
-  let directory, ocsidbm =
-    ref (Ocsigen_config.get_datadir () ^ "/ocsipersist"), ref "ocsidbm"
-
-  let inch = ref (Lwt.fail (Failure "Ocsipersist not initialised"))
-  let outch = ref (Lwt.fail (Failure "Ocsipersist not initialised"))
-end
+module Config = Ocsipersist_settings
 
 module Aux = struct
   external sys_exit : int -> 'a = "caml_sys_exit"
@@ -37,8 +31,7 @@ module Db = struct
          let param = [|!Config.ocsidbm; !Config.directory|] in
          let child () =
            let log =
-             Unix.openfile
-               (Ocsigen_messages.error_log_path ())
+             Unix.openfile !Config.error_log_path
                [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND]
                0o640
            in
@@ -329,50 +322,21 @@ type 'value table = 'value Polymorphic.table
            (fun () -> Unix.close socket; return ()))
          (fun e -> Unix.close socket; Lwt.fail e))))
 *)
-
-module Registration = struct
-  (** getting the directory from config file *)
-  let rec parse_global_config ((store, ocsidbm, delayloading) as d) = function
-    | [] -> d
-    | Xml.Element ("delayloading", [("val", ("true" | "1"))], []) :: ll ->
-        parse_global_config (store, ocsidbm, true) ll
-    | Xml.Element ("delayloading", [("val", ("false" | "0"))], []) :: ll ->
-        parse_global_config (store, ocsidbm, false) ll
-    | Xml.Element ("store", [("dir", s)], []) :: ll ->
-        if store = None
-        then parse_global_config (Some s, ocsidbm, delayloading) ll
-        else Ocsigen_extensions.badconfig "Ocsipersist: Duplicate <store> tag"
-    | Xml.Element ("ocsidbm", [("name", s)], []) :: ll ->
-        if ocsidbm = None
-        then parse_global_config (store, Some s, delayloading) ll
-        else Ocsigen_extensions.badconfig "Ocsipersist: Duplicate <ocsidbm> tag"
-    | Xml.Element (s, _, _) :: _ll ->
-        Ocsigen_extensions.badconfig "Bad tag %s" s
-    | _ ->
-        Ocsigen_extensions.badconfig
-          "Unexpected content inside Ocsipersist config"
-
-  let init_fun config =
-    let store, ocsidbmconf, delay_loading =
-      parse_global_config (None, None, false) config
-    in
-    (match store with None -> () | Some d -> Config.directory := d);
-    (match ocsidbmconf with None -> () | Some d -> Config.ocsidbm := d);
-    if delay_loading
-    then
-      Lwt_log.ign_warning ~section
-        "Asynchronuous initialization (may fail later)"
-    else Lwt_log.ign_warning ~section "Initializing ...";
-    let indescr = Db.get_indescr 2 in
-    if delay_loading
-    then (
-      Config.inch := Lwt.map (Lwt_io.of_fd ~mode:Lwt_io.input) indescr;
-      Config.outch := Lwt.map (Lwt_io.of_fd ~mode:Lwt_io.output) indescr)
-    else
-      let r = Lwt_main.run indescr in
-      Config.inch := Lwt.return (Lwt_io.of_fd ~mode:Lwt_io.input r);
-      Config.outch := Lwt.return (Lwt_io.of_fd ~mode:Lwt_io.output r);
-      Lwt_log.ign_warning ~section "...Initialization complete"
-
-  let _ = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun ()
-end
+let init () =
+  if !Ocsipersist_settings.delay_loading
+  then
+    Lwt_log.ign_warning ~section "Asynchronuous initialization (may fail later)"
+  else Lwt_log.ign_warning ~section "Initializing ...";
+  let indescr = Db.get_indescr 2 in
+  if !Ocsipersist_settings.delay_loading
+  then (
+    Ocsipersist_settings.inch :=
+      Lwt.map (Lwt_io.of_fd ~mode:Lwt_io.input) indescr;
+    Ocsipersist_settings.outch :=
+      Lwt.map (Lwt_io.of_fd ~mode:Lwt_io.output) indescr)
+  else
+    let r = Lwt_main.run indescr in
+    Ocsipersist_settings.inch := Lwt.return (Lwt_io.of_fd ~mode:Lwt_io.input r);
+    Ocsipersist_settings.outch :=
+      Lwt.return (Lwt_io.of_fd ~mode:Lwt_io.output r);
+    Lwt_log.ign_warning ~section "...Initialization complete"

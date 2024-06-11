@@ -1,10 +1,10 @@
 opam-version: "2.0"
 name:         "ocsipersist"
-version:      "1.1.0"
+version:      "2.0.0"
 authors:      "The Ocsigen team <dev@ocsigen.org>"
 maintainer:   "Jan Rochel <jan@besport.com>"
 license:      "LGPL-2.1-only with OCaml-LGPL-linking-exception"
-synopsis:     "Persistent key/value storage (for Ocsigen) using multiple backends"
+synopsis:     "Persistent key/value storage for OCaml using multiple backends"
 description:  "This is an virtual library defining a unified frontend for a number of key/value storage implementations. Ocsipersist is used pervasively in Eliom/Ocsigen to handle sessions and references. It can be used as an extension for ocsigenserver or as a library. Implementations of the following backends currently exist: DBM, PostgreSQL, SQLite."
 
 homepage: "https://github.com/ocsigen/ocsipersist"
@@ -15,18 +15,10 @@ build:   [ "dune" "build" "-p" name "-j" jobs ]
 depends: [
   "dune" {>= "2.9"}
   "lwt" {>= "4.2.0"}
-  "ocsigenserver" {>= "3.0.0"}
-  "ocsipersist-lib" {>= "1.1.0" & < "1.2.0"}
+  "ocsipersist-lib" {>= "2.0.0" & < "3.0.0"}
 ]
-
-depopts: [
-	"ocsipersist-dbm"
-	"ocsipersist-pgsql"
-	"ocsipersist-sqlite"
-]
-
 conflicts: [
-	"ocsipersist-dbm" {< "1.1.0" | >= "1.2.0"}
-	"ocsipersist-pgsql" {< "1.1.0" | >= "1.2.0"}
-	"ocsipersist-sqlite" {< "1.1.0" | >= "1.2.0"}
+	"ocsipersist-dbm" {< "2.0.0" | >= "2.1.0"}
+	"ocsipersist-pgsql" {< "2.0.0" | >= "2.1.0"}
+	"ocsipersist-sqlite" {< "2.0.0" | >= "2.1.0"}
 ]

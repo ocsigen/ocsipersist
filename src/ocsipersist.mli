@@ -26,3 +26,5 @@ module Store : Ocsipersist_lib.Sigs.STORE
 
 type store = Store.store
 type 'a variable = 'a Store.t
+
+val init : unit -> unit

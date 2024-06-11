@@ -27,15 +27,7 @@ open Printf
 
 exception Ocsipersist_error
 
-module Config = struct
-  let host = ref None
-  let port = ref None
-  let user = ref None
-  let password = ref None
-  let database = ref "ocsipersist"
-  let unix_domain_socket_dir = ref None
-  let size_conn_pool = ref 16
-end
+module Config = Ocsipersist_settings
 
 let connect () =
   PGOCaml.connect ?host:!Config.host ?port:!Config.port ?user:!Config.user
@@ -55,7 +47,7 @@ let conn_pool : (string, unit) Hashtbl.t PGOCaml.t Lwt_pool.t ref =
   (* This connection pool will be overwritten by init_fun! *)
   ref
     (Lwt_pool.create !Config.size_conn_pool ~validate:PGOCaml.alive ~dispose
-       connect)
+       (fun () -> Lwt.fail (Failure "Ocsipersist db not initialised")))
 
 let use_pool f =
   Lwt_pool.use !conn_pool @@ fun db ->
@@ -425,45 +417,6 @@ end
 type store = Store.store
 type 'a variable = 'a Store.t
 
-module Registration = struct
-  let parse_global_config = function
-    | [] -> ()
-    | [Xml.Element ("database", attrs, [])] ->
-        let parse_attr = function
-          | "host", h -> Config.host := Some h
-          | "port", p -> (
-            try Config.port := Some (int_of_string p)
-            with Failure _ ->
-              raise
-              @@ Ocsigen_extensions.Error_in_config_file
-                   "port is not an integer")
-          | "user", u -> Config.user := Some u
-          | "password", pw -> Config.password := Some pw
-          | "database", db -> Config.database := db
-          | "unix_domain_socket_dir", udsd ->
-              Config.unix_domain_socket_dir := Some udsd
-          | "size_conn_pool", scp -> (
-            try Config.size_conn_pool := int_of_string scp
-            with Failure _ ->
-              raise
-              @@ Ocsigen_extensions.Error_in_config_file
-                   "size_conn_pool is not an integer")
-          | _ ->
-              raise
-              @@ Ocsigen_extensions.Error_in_config_file
-                   "Unexpected attribute for <database> in Ocsipersist config"
-        in
-        ignore @@ List.map parse_attr attrs;
-        ()
-    | _ ->
-        raise
-        @@ Ocsigen_extensions.Error_in_config_file
-             "Unexpected content inside Ocsipersist config"
-
-  let init_fun config =
-    parse_global_config config;
-    conn_pool :=
-      Lwt_pool.create !Config.size_conn_pool ~validate:PGOCaml.alive connect
-
-  let _ = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun ()
-end
+let init () =
+  conn_pool :=
+    Lwt_pool.create !Config.size_conn_pool ~validate:PGOCaml.alive connect
