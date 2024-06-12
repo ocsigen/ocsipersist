@@ -3,7 +3,7 @@ name:         "ocsipersist-pgsql"
 version:      "2.0.0"
 authors:      "The Ocsigen team <dev@ocsigen.org>"
 maintainer:   "Jan Rochel <jan@besport.com>"
-license:      "LGPL-2.1-only with OCaml-LGPL-linking-exception"
+license:      "LGPL-2.1-only WITH OCaml-LGPL-linking-exception"
 synopsis:     "Persistent key/value storage for OCaml using PostgreSQL"
 description:  "This library provides a PostgreSQL backend for the unified key/value storage frontend as defined in the ocsipersist package."
 
