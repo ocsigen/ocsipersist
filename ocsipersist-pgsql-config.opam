@@ -13,6 +13,7 @@ dev-repo: "git+https://github.com/ocsigen/ocsipersist.git"
 build:   [ "dune" "build" "-p" name "-j" jobs ]
 
 depends: [
+  "ocaml" {>= "4.08"}
   "dune" {>= "2.9"}
   "xml-light"
   "ocsigenserver" {>= "3.0.0"}
