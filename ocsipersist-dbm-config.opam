@@ -12,6 +12,7 @@ bug-reports: "https://github.com/ocsigen/ocsipersist/issues"
 dev-repo: "git+https://github.com/ocsigen/ocsipersist.git"
 build:   [ "dune" "build" "-p" name "-j" jobs ]
 
+available: [ os != "macos" ]
 depends: [
   "dune" {>= "2.9"}
   "xml-light"
