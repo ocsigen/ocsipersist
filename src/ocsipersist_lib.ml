@@ -1,3 +1,5 @@
+open Lwt.Syntax
+
 (** This modules provides tools for creating more implementations of the {!Ocsipersist} virtual module. *)
 
 module Sigs = struct
@@ -279,10 +281,13 @@ struct
   let make ~name ~default = {name; default = (fun () -> Lwt.return default)}
 
   let get {name; default} =
-    try%lwt T.find name
-    with Not_found ->
-      default () >>= fun d ->
-      T.add name d >>= fun () -> Lwt.return d
+    Lwt.catch
+      (fun () -> T.find name)
+      (function
+         | Not_found ->
+             default () >>= fun d ->
+             T.add name d >>= fun () -> Lwt.return d
+         | exc -> Lwt.reraise exc)
 
   let set {name} = T.add name
 end
@@ -297,13 +302,13 @@ module Ref (Store : STORE) = struct
     | None -> Ref (ref v)
     | Some name ->
         Per
-          (let%lwt store = Lazy.force store in
+          (let* store = Lazy.force store in
            Store.make_persistent ~store ~name ~default:v)
 
   let get = function
     | Ref r -> Lwt.return !r
     | Per r ->
-        let%lwt r = r in
+        let* r = r in
         Store.get r
 
   let set r v =
@@ -312,6 +317,6 @@ module Ref (Store : STORE) = struct
         r := v;
         Lwt.return_unit
     | Per r ->
-        let%lwt r = r in
+        let* r = r in
         Store.set r v
 end
