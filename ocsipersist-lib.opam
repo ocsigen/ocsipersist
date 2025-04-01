@@ -15,5 +15,4 @@ build:   [ "dune" "build" "-p" name "-j" jobs ]
 depends: [
   "dune" {>= "2.9"}
   "lwt" {>= "4.2.0"}
-  "lwt_ppx" {>= "2.0.0"}
 ]
