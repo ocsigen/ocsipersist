@@ -1,5 +1,7 @@
-let section = Lwt_log.Section.make "ocsigen:ocsipersist:pgsql:config"
-let _ = Lwt_log.ign_info ~section "Init for Ocsigen Server config file"
+let section = Logs.Src.create "ocsigen:ocsipersist:pgsql:config"
+
+let _ =
+  Logs.info ~src:section (fun fmt -> fmt "Init for Ocsigen Server config file")
 
 let parse_global_config = function
   | [] -> ()

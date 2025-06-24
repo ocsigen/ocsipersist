@@ -2,7 +2,7 @@
 
 module type TABLE = Ocsipersist_lib.Sigs.TABLE
 
-let section = Lwt_log.Section.make "ocsigen:ocsipersist:pgsql"
+let section = Logs.Src.create "ocsigen:ocsipersist:pgsql"
 
 module Lwt_thread = struct
   include Lwt
@@ -55,10 +55,11 @@ let use_pool f =
     (fun () -> f db)
     (function
        | PGOCaml.Error msg as e ->
-           Lwt_log.ign_error_f ~section "postgresql protocol error: %s" msg;
+           Logs.err ~src:section (fun fmt ->
+             fmt "postgresql protocol error: %s" msg);
            PGOCaml.close db >>= fun () -> Lwt.fail e
        | Lwt.Canceled as e ->
-           Lwt_log.ign_error ~section "thread canceled";
+           Logs.err ~src:section (fun fmt -> fmt "thread canceled");
            PGOCaml.close db >>= fun () -> Lwt.fail e
        | e -> Lwt.fail e)
 
