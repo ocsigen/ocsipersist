@@ -76,7 +76,7 @@ let list_tables () =
   aux ()
 
 (* try to create the directory if it does not exist *)
-let _ =
+let () =
   try Unix.access directory [Unix.R_OK; Unix.W_OK; Unix.X_OK; Unix.F_OK] with
   | Unix.Unix_error (Unix.ENOENT, _, _) -> (
     try Unix.mkdir directory 0o750
@@ -138,7 +138,7 @@ let db_length t =
   let rec aux f n =
     Lwt.catch
       (fun () ->
-         ignore (f table);
+         ignore (f table : string);
          Lwt.pause () >>= fun () -> aux Dbm.nextkey (n + 1))
       (function Not_found -> Lwt.return n | e -> Lwt.fail e)
   in
@@ -175,9 +175,11 @@ let sigs =
   ; sigvtalrm
   ; sigprof ]
 
-let _ = List.iter (fun s -> Sys.set_signal s (Signal_handle (close_all 0))) sigs
-let _ = Sys.set_signal Sys.sigpipe Sys.Signal_ignore
-let _ = Unix.setsid ()
+let () =
+  List.iter (fun s -> Sys.set_signal s (Signal_handle (close_all 0))) sigs
+
+let () = Sys.set_signal Sys.sigpipe Sys.Signal_ignore
+let _ : int = Unix.setsid ()
 
 (*****************************************************************************)
 (** Communication functions: *)
@@ -197,7 +199,7 @@ let execute outch =
   | Replace_if_exists (t, k, v) ->
       handle_errors (fun () ->
         try
-          ignore (db_get t k);
+          ignore (db_get t k : string);
           db_replace t k v;
           send outch Ok
         with Not_found -> send outch Dbm_not_found)
@@ -231,15 +233,15 @@ let b = ref false
 
 let rec loop socket =
   Lwt_unix.accept socket >>= fun (indescr, _) ->
-  ignore
-    (b := true;
-     nb_clients := !nb_clients + 1;
-     let inch = Lwt_io.of_fd ~mode:Lwt_io.input indescr in
-     let outch = Lwt_io.of_fd ~mode:Lwt_io.output indescr in
-     Lwt.catch (fun () -> listen_client inch outch >>= finish) finish);
+  Lwt.async (fun () ->
+    b := true;
+    nb_clients := !nb_clients + 1;
+    let inch = Lwt_io.of_fd ~mode:Lwt_io.input indescr in
+    let outch = Lwt_io.of_fd ~mode:Lwt_io.output indescr in
+    Lwt.catch (fun () -> listen_client inch outch >>= finish) finish);
   loop socket
 
-let _ =
+let () =
   Lwt_main.run
     (let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
      Lwt.catch
@@ -259,10 +261,10 @@ let _ =
             Unix.dup2 devnull Unix.stderr;
             Unix.close devnull;
             Unix.close Unix.stdin; *)
-     ignore
-       ( Lwt_unix.sleep 4.1 >>= fun () ->
-         if not !b then close_all 0 ();
-         Lwt.return () );
+     Lwt.async (fun () ->
+       Lwt_unix.sleep 4.1 >>= fun () ->
+       if not !b then close_all 0 ();
+       Lwt.return ());
      (* If nothing happened during 5 seconds, I quit *)
      loop socket)
 

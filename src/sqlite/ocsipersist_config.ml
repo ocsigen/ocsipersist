@@ -19,4 +19,4 @@ let init config =
          !Ocsipersist_settings.db_file);
     raise e
 
-let _ = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun:init ()
+let () = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun:init ()
