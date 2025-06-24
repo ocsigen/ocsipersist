@@ -19,7 +19,7 @@ module Aux = struct
       | Rc.OK -> bind_safely stmt q
       | Rc.BUSY | Rc.LOCKED -> yield (); bind_safely stmt l
       | rc ->
-          ignore (finalize stmt);
+          ignore (finalize stmt : Rc.t);
           failwith (Rc.to_string rc))
 
   let close_safely db =
@@ -56,10 +56,10 @@ module Aux = struct
       let stmt = prepare db sql in
       let rec aux () =
         match step stmt with
-        | Rc.DONE -> ignore (finalize stmt)
+        | Rc.DONE -> ignore (finalize stmt : Rc.t)
         | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -76,14 +76,14 @@ module Aux = struct
             let value =
               match column stmt 0 with Data.BLOB s -> s | _ -> assert false
             in
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             value
         | Rc.DONE ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             raise Not_found
         | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -98,10 +98,10 @@ module Aux = struct
       in
       let rec aux () =
         match step stmt with
-        | Rc.DONE -> ignore (finalize stmt)
+        | Rc.DONE -> ignore (finalize stmt : Rc.t)
         | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -182,10 +182,10 @@ module Functorial = struct
         let stmt = prepare db sql in
         let rec aux () =
           match step stmt with
-          | Rc.DONE -> ignore (finalize stmt)
+          | Rc.DONE -> ignore (finalize stmt : Rc.t)
           | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
           | rc ->
-              ignore (finalize stmt);
+              ignore (finalize stmt : Rc.t);
               failwith (Rc.to_string rc)
         in
         aux ()
@@ -201,14 +201,14 @@ module Functorial = struct
         match step stmt with
         | Rc.ROW ->
             let value = column stmt 0 in
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             value
         | Rc.DONE ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             raise Not_found
         | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       Value.decode @@ aux ()
@@ -221,10 +221,10 @@ module Functorial = struct
       in
       let rec aux () =
         match step stmt with
-        | Rc.DONE -> ignore (finalize stmt)
+        | Rc.DONE -> ignore (finalize stmt : Rc.t)
         | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -234,10 +234,10 @@ module Functorial = struct
       let stmt = Aux.bind_safely (prepare db sql) [Key.encode key, ":key"] in
       let rec aux () =
         match step stmt with
-        | Rc.DONE -> ignore (finalize stmt)
+        | Rc.DONE -> ignore (finalize stmt : Rc.t)
         | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -253,14 +253,14 @@ module Functorial = struct
               | Data.INT s -> Int64.to_int s
               | _ -> assert false
             in
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             value
         | Rc.DONE ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             raise Not_found
         | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -297,15 +297,15 @@ module Functorial = struct
         | Rc.ROW -> (
           match column stmt 0, column stmt 1, column stmt 2 with
           | k, v, Data.INT rowid ->
-              ignore (finalize stmt);
+              ignore (finalize stmt : Rc.t);
               Some (k, v, rowid)
           | _ -> assert false)
         | Rc.DONE ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             None
         | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -315,7 +315,7 @@ module Functorial = struct
 
     let replace_if_exists k v =
       with_table @@ fun db ->
-      ignore (db_get k db);
+      ignore (db_get k db : value);
       db_replace k v db
 
     let remove key = with_table @@ db_remove key
@@ -383,10 +383,10 @@ module Functorial = struct
           | Rc.ROW ->
               f (Key.decode @@ column stmt 0) (Value.decode @@ column stmt 1);
               aux ()
-          | Rc.DONE -> ignore (finalize stmt)
+          | Rc.DONE -> ignore (finalize stmt : Rc.t)
           | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
           | rc ->
-              ignore (finalize stmt);
+              ignore (finalize stmt : Rc.t);
               failwith (Rc.to_string rc)
         in
         aux ()

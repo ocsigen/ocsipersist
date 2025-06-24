@@ -293,7 +293,7 @@ module Functorial = struct
           if Int64.of_int (List.length l) < limit
           then Lwt.return_unit
           else
-            let last, _ = list_last key_values in
+            let last, (_ : value) = list_last key_values in
             let count =
               Option.map
                 Int64.(fun c -> sub c @@ of_int @@ List.length key_values)

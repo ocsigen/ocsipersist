@@ -34,4 +34,4 @@ let init_fun config =
   | Some d -> Ocsipersist_settings.ocsidbm := d);
   Ocsipersist.init ()
 
-let _ = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun ()
+let () = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun ()
