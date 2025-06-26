@@ -3,14 +3,14 @@
  (public_name ocsipersist-lib)
  (modules ocsipersist_lib)
  (wrapped false)
- (libraries lwt))
+ (libraries eio eio.unix))
 
 (library
  (name ocsipersist)
  (public_name ocsipersist)
  (virtual_modules ocsipersist)
  (modules ocsipersist)
- (libraries ocsipersist_lib lwt))
+ (libraries ocsipersist_lib eio))
 
 (env
  (_

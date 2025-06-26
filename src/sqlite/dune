@@ -5,7 +5,8 @@
  (modules ocsipersist)
  (libraries
   sqlite3
-  lwt.unix
+  eio
+  eio_main
   logs
   ocsipersist_lib
   ocsipersist_sqlite_settings))

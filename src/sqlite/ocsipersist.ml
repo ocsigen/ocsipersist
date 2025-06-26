@@ -11,7 +11,9 @@ module Aux = struct
   (* This reference is overwritten when the init function (at the end of the file)
    is run, which occurs when the extension is loaded *)
   let db_file = Ocsipersist_settings.db_file
-  let yield () = Thread.yield ()
+  let yield () = Fiber.yield ()
+  let domain_mgr = ref None
+  let get_domain_mgr () : _ Eio.Domain_manager.t = Option.get !domain_mgr
 
   let rec bind_safely stmt = function
     | [] -> stmt
@@ -50,12 +52,7 @@ module Aux = struct
         Mutex.unlock m;
         raise e
     in
-    Fiber.fork_promise
-      ~sw:(Stdlib.Option.get (Fiber.get Ocsipersist_lib.current_switch))
-      (fun () ->
-        Eio.Domain_manager.run
-          (Stdlib.Option.get (Fiber.get Ocsipersist_lib.env))#domain_mgr
-          (fun () -> aux ()))
+    Eio.Domain_manager.run (get_domain_mgr ()) aux
 
   (* Référence indispensable pour les codes de retours et leur signification :
    * http://sqlite.org/capi3ref.html
@@ -155,7 +152,6 @@ module Store = struct
     pvname
 
   let make_persistent_lazy ~store ~name ~default =
-    let default () = default () in
     make_persistent_lazy_lwt ~store ~name ~default
 
   let make_persistent ~store ~name ~default =
@@ -492,11 +488,10 @@ module Ref = Ocsipersist_lib.Ref (Store)
 
 type 'value table = 'value Polymorphic.table
 
-let init () =
-  Eio_main.run (fun env ->
-      Fiber.with_binding Ocsipersist_lib.env env (fun () ->
-          Switch.run (fun sw ->
-              Fiber.with_binding Ocsipersist_lib.current_switch sw (fun () ->
-                  (* We check that we can access the database *)
-                  (* TODO: lwt-to-direct-style: [Eio_main.run] argument used to be a [Lwt] promise and is now a [fun]. Make sure no asynchronous or IO calls are done outside of this [fun]. *)
-                  Aux.exec_safely (fun _ -> ())))))
+let init ~env =
+  Switch.run (fun sw ->
+    Aux.domain_mgr := Some env#domain_mgr;
+    Fiber.with_binding Ocsipersist_lib.current_switch sw (fun () ->
+      (* We check that we can access the database *)
+      (* TODO: lwt-to-direct-style: [Eio_main.run] argument used to be a [Lwt] promise and is now a [fun]. Make sure no asynchronous or IO calls are done outside of this [fun]. *)
+      Aux.exec_safely (fun _ -> ())))

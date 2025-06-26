@@ -2,6 +2,8 @@ open Eio.Std
 
 (** This modules provides tools for creating more implementations of the {!Ocsipersist} virtual module. *)
 
+let current_switch : Switch.t Fiber.key = Fiber.create_key ()
+
 module Sigs = struct
   module type TABLE = sig
     type key
@@ -277,26 +279,27 @@ end
 module Ref (Store : STORE) = struct
   let store = lazy (Store.open_store "__ocsipersist_ref_store__")
 
-  type 'a t = Ref of 'a ref | Per of 'a Store.t Promise.t
+  type 'a t = Ref of 'a ref | Per of 'a Store.t Lazy.t
 
   let ref ?persistent v =
     match persistent with
     | None -> Ref (ref v)
     | Some name ->
         Per
-          (let store = Lazy.force store in
-           Store.make_persistent ~store ~name ~default:v)
+          (lazy
+            (let store = Lazy.force store in
+             Store.make_persistent ~store ~name ~default:v))
 
   let get = function
     | Ref r -> !r
     | Per r ->
-        let r = r in
+        let (lazy r) = r in
         Store.get r
 
   let set r v =
     match r with
     | Ref r -> r := v
     | Per r ->
-        let r = r in
+        let (lazy r) = r in
         Store.set r v
 end
