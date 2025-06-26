@@ -2,6 +2,7 @@
 (name ocsipersist)
 
 (generate_opam_files true)
+(cram enable)
 
 (maintainers "Jan Rochel <jan@besport.com>")
 (authors "Ocsigen team <dev@ocsigen.org>")
