@@ -1,3 +1,5 @@
+open Eio.Std
+
 (* Ocsigen
  * http://www.ocsigen.org
  * Module ocsidbm.ml
@@ -22,7 +24,6 @@
 
 open Dbm
 open Ocsidbmtypes
-open Lwt.Infix
 
 let directory = Sys.argv.(1)
 
@@ -47,10 +48,10 @@ let errlog s =
 (** Internal functions: storage in files using DBM *)
 
 module Tableoftables = Map.Make (struct
-    type t = string
+  type t = string
 
-    let compare = compare
-  end)
+  let compare = compare
+end)
 
 let tableoftables = ref Tableoftables.empty
 
@@ -65,25 +66,27 @@ let list_tables () =
   let rec aux () =
     try
       let n = Unix.readdir d in
-      if Filename.check_suffix n suffix
-      then Filename.chop_extension n :: aux ()
-      else if Filename.check_suffix n (suffix ^ ".pag")
-              (* depending on the version of dbm, there may be a .pag suffix *)
+      if Filename.check_suffix n suffix then Filename.chop_extension n :: aux ()
+      else if
+        Filename.check_suffix n (suffix ^ ".pag")
+        (* depending on the version of dbm, there may be a .pag suffix *)
       then Filename.chop_extension (Filename.chop_extension n) :: aux ()
       else aux ()
-    with End_of_file -> Unix.closedir d; []
+    with End_of_file ->
+      Unix.closedir d;
+      []
   in
   aux ()
 
 (* try to create the directory if it does not exist *)
 let () =
-  try Unix.access directory [Unix.R_OK; Unix.W_OK; Unix.X_OK; Unix.F_OK] with
+  try Unix.access directory [ Unix.R_OK; Unix.W_OK; Unix.X_OK; Unix.F_OK ] with
   | Unix.Unix_error (Unix.ENOENT, _, _) -> (
-    try Unix.mkdir directory 0o750
-    with Unix.Unix_error (error, _, _) ->
-      failwith
-        (Printf.sprintf "Ocsidbm: can't create directory %s: %s" directory
-           (Unix.error_message error)))
+      try Unix.mkdir directory 0o750
+      with Unix.Unix_error (error, _, _) ->
+        failwith
+          (Printf.sprintf "Ocsidbm: can't create directory %s: %s" directory
+             (Unix.error_message error)))
   | Unix.Unix_error (error, _, _) ->
       failwith
         (Printf.sprintf "Ocsidbm: can't access directory %s: %s" directory
@@ -91,14 +94,14 @@ let () =
 
 let open_db name =
   let t =
-    opendbm (directory ^ "/" ^ name ^ suffix) [Dbm_rdwr; Dbm_create] 0o640
+    opendbm (directory ^ "/" ^ name ^ suffix) [ Dbm_rdwr; Dbm_create ] 0o640
   in
   tableoftables := Tableoftables.add name t !tableoftables;
   t
 
 let open_db_if_exists name =
   try
-    let t = opendbm (directory ^ "/" ^ name ^ suffix) [Dbm_rdwr] 0o640 in
+    let t = opendbm (directory ^ "/" ^ name ^ suffix) [ Dbm_rdwr ] 0o640 in
     tableoftables := Tableoftables.add name t !tableoftables;
     t
   with Unix.Unix_error (Unix.ENOENT, _, _) | Dbm.Dbm_error _ ->
@@ -136,11 +139,13 @@ let db_nextkey t = Dbm.nextkey (find_dont_create_table t)
 let db_length t =
   let table = find_dont_create_table t in
   let rec aux f n =
-    Lwt.catch
-      (fun () ->
-         ignore (f table : string);
-         Lwt.pause () >>= fun () -> aux Dbm.nextkey (n + 1))
-      (function Not_found -> Lwt.return n | e -> Lwt.fail e)
+    try
+      ignore (f table : string);
+      Fiber.yield ();
+      aux Dbm.nextkey (n + 1)
+    with
+    | Not_found -> n
+    | e -> raise e
   in
   aux Dbm.firstkey 0
 (* Because of Dbm implementation, the result may be less than the expected
@@ -158,22 +163,24 @@ let the_end i = exit i
 open Sys
 
 let sigs =
-  [ sigabrt
-  ; sigalrm
-  ; sigfpe
-  ; sighup
-  ; sigill
-  ; sigint
-  ; sigquit
-  ; sigsegv
-  ; sigterm
-  ; sigusr1
-  ; sigusr2
-  ; sigchld
-  ; sigttin
-  ; sigttou
-  ; sigvtalrm
-  ; sigprof ]
+  [
+    sigabrt;
+    sigalrm;
+    sigfpe;
+    sighup;
+    sigill;
+    sigint;
+    sigquit;
+    sigsegv;
+    sigterm;
+    sigusr1;
+    sigusr2;
+    sigchld;
+    sigttin;
+    sigttou;
+    sigvtalrm;
+    sigprof;
+  ]
 
 let () =
   List.iter (fun s -> Sys.set_signal s (Signal_handle (close_all 0))) sigs
@@ -184,89 +191,127 @@ let _ : int = Unix.setsid ()
 (*****************************************************************************)
 (** Communication functions: *)
 
-let send outch v = Lwt_io.write_value outch v >>= fun () -> Lwt_io.flush outch
+let send outch v =
+  Marshal.to_channel outch v;
+  Eio.Buf_write.flush outch
 
 let execute outch =
   let handle_errors f = try f () with e -> send outch (Error e) in
   function
   | Get (t, k) ->
       handle_errors (fun () ->
-        try send outch (Value (db_get t k))
-        with Not_found -> send outch Dbm_not_found)
-  | Remove (t, k) -> handle_errors (fun () -> db_remove t k; send outch Ok)
+          try send outch (Value (db_get t k))
+          with Not_found -> send outch Dbm_not_found)
+  | Remove (t, k) ->
+      handle_errors (fun () ->
+          db_remove t k;
+          send outch Ok)
   | Replace (t, k, v) ->
-      handle_errors (fun () -> db_replace t k v; send outch Ok)
+      handle_errors (fun () ->
+          db_replace t k v;
+          send outch Ok)
   | Replace_if_exists (t, k, v) ->
       handle_errors (fun () ->
-        try
-          ignore (db_get t k : string);
-          db_replace t k v;
-          send outch Ok
-        with Not_found -> send outch Dbm_not_found)
+          try
+            ignore (db_get t k : string);
+            db_replace t k v;
+            send outch Ok
+          with Not_found -> send outch Dbm_not_found)
   | Firstkey t ->
       handle_errors (fun () ->
-        try send outch (Key (db_firstkey t)) with Not_found -> send outch End)
+          try send outch (Key (db_firstkey t))
+          with Not_found -> send outch End)
   | Nextkey t ->
       handle_errors (fun () ->
-        try send outch (Key (db_nextkey t)) with Not_found -> send outch End)
+          try send outch (Key (db_nextkey t)) with Not_found -> send outch End)
   | Length t ->
       handle_errors (fun () ->
-        Lwt.catch
-          (fun () ->
-             db_length t >>= fun i ->
-             send outch (Value (Marshal.to_string i [])))
-          (function
-             | Not_found -> send outch Dbm_not_found | e -> send outch (Error e)))
+          try
+            let i = db_length t in
+            send outch (Value (Marshal.to_string i []))
+          with
+          | Not_found -> send outch Dbm_not_found
+          | e -> send outch (Error e))
 
 let nb_clients = ref 0
 
 let rec listen_client inch outch =
-  Lwt_io.read_value inch >>= fun v ->
-  execute outch v >>= fun () -> listen_client inch outch
+  let v = Marshal.from_channel inch in
+  execute outch v;
+  listen_client inch outch
 
 let finish _ =
   nb_clients := !nb_clients - 1;
-  if !nb_clients = 0 then close_all 0 ();
-  Lwt.return ()
+  if !nb_clients = 0 then close_all 0 ()
 
 let b = ref false
 
 let rec loop socket =
-  Lwt_unix.accept socket >>= fun (indescr, _) ->
-  Lwt.async (fun () ->
-    b := true;
-    nb_clients := !nb_clients + 1;
-    let inch = Lwt_io.of_fd ~mode:Lwt_io.input indescr in
-    let outch = Lwt_io.of_fd ~mode:Lwt_io.output indescr in
-    Lwt.catch (fun () -> listen_client inch outch >>= finish) finish);
+  let indescr, _ =
+    Unix.accept
+      (* TODO: lwt-to-direct-style: This call to [Unix.accept] was [Lwt_unix.accept] before. It's now blocking. *)
+      socket
+  in
+  Fiber.fork
+    ~sw:(Stdlib.Option.get (Fiber.get Ocsipersist_lib.current_switch))
+    (fun () ->
+      b := true;
+      nb_clients := !nb_clients + 1;
+      let inch =
+        Eio.Buf_read.of_flow ~max_size:1_000_000
+          (Eio_unix.Net.import_socket_stream
+             ~sw:(Stdlib.Option.get (Fiber.get Ocsipersist_lib.current_switch))
+             ~close_unix:true indescr
+            : [ `R | `Flow | `Close ] r)
+      in
+      let outch =
+        Eio.Buf_write.with_flow
+          (Eio_unix.Net.import_socket_stream
+             ~sw:(Stdlib.Option.get (Fiber.get Ocsipersist_lib.current_switch))
+             ~close_unix:true
+             (* TODO: lwt-to-direct-style: Write operations to buffered IO should be moved inside [with_flow]. *)
+             indescr
+            : [ `W | `Flow | `Close ] r)
+          (fun outbuf -> `Move_writing_code_here)
+      in
+      try finish (listen_client inch outch) with v -> finish v);
   loop socket
 
 let () =
-  Lwt_main.run
-    (let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
-     Lwt.catch
-       (fun () ->
-          Lwt_unix.bind socket (Unix.ADDR_UNIX (directory ^ "/" ^ socketname)))
-       (fun _exn ->
-          errlog
-            ("Please make sure that the directory " ^ directory
-           ^ " exists, writable for ocsidbm, and no other ocsidbm process is running on the same directory. If not, remove the file "
-           ^ directory ^ "/" ^ socketname);
-          the_end 1)
-     >>= fun () ->
-     Lwt_unix.listen socket 20;
-     (* Done in ocsipersist.ml
+  Eio_main.run (fun env ->
+      Fiber.with_binding Ocsipersist_lib.env env (fun () ->
+          Switch.run (fun sw ->
+              Fiber.with_binding Ocsipersist_lib.current_switch sw (fun () ->
+                  (* TODO: lwt-to-direct-style: [Eio_main.run] argument used to be a [Lwt] promise and is now a [fun]. Make sure no asynchronous or IO calls are done outside of this [fun]. *)
+                  let socket = Unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
+                  (try
+                     Unix.bind
+                       (* TODO: lwt-to-direct-style: This call to [Unix.bind] was [Lwt_unix.bind] before. It's now blocking. *)
+                       socket
+                       (Unix.ADDR_UNIX (directory ^ "/" ^ socketname))
+                   with _exn ->
+                     errlog
+                       ("Please make sure that the directory " ^ directory
+                      ^ " exists, writable for ocsidbm, and no other ocsidbm \
+                         process is running on the same directory. If not, \
+                         remove the file " ^ directory ^ "/" ^ socketname);
+                     the_end 1);
+                  (* Done in ocsipersist.ml
         let devnull = Unix.openfile "/dev/null" [Unix.O_WRONLY] 0 in
             Unix.dup2 devnull Unix.stdout;
             Unix.dup2 devnull Unix.stderr;
             Unix.close devnull;
             Unix.close Unix.stdin; *)
-     Lwt.async (fun () ->
-       Lwt_unix.sleep 4.1 >>= fun () ->
-       if not !b then close_all 0 ();
-       Lwt.return ());
-     (* If nothing happened during 5 seconds, I quit *)
-     loop socket)
+                  Unix.listen socket 20;
+                  Fiber.fork
+                    ~sw:
+                      (Stdlib.Option.get
+                         (Fiber.get Ocsipersist_lib.current_switch))
+                    (fun () ->
+                      Eio_unix.sleep 4.1;
+                      if not !b then close_all 0 ());
+                  (* If nothing happened during 5 seconds, I quit *)
+                  loop socket))))
 
 (*****************************************************************************)
 (** Garbage collection of expired data *)
