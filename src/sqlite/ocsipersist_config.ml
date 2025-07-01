@@ -1,3 +1,5 @@
+open Eio.Std
+
 let parse_global_config = function
   | [] -> None
   | [Xml.Element ("database", [("file", s)], [])] -> Some s
@@ -7,11 +9,12 @@ let parse_global_config = function
            "Unexpected content inside Ocsipersist config")
 
 let init config =
+  let env = Option.get (Fiber.get Ocsigen_lib.env) in
   Ocsipersist_settings.db_file := Ocsigen_config.get_datadir () ^ "/ocsidb";
   (match parse_global_config config with
   | None -> ()
   | Some d -> Ocsipersist_settings.db_file := d);
-  try Ocsipersist.init ()
+  try Ocsipersist.init ~env
   with e ->
     Ocsigen_messages.errlog
       (Printf.sprintf
@@ -19,4 +22,4 @@ let init config =
          !Ocsipersist_settings.db_file);
     raise e
 
-let _ = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun:init ()
+let () = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun:init ()

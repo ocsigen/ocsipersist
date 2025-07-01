@@ -1,5 +1,7 @@
-let section = Lwt_log.Section.make "ocsigen:ocsipersist:pgsql:config"
-let _ = Lwt_log.ign_info ~section "Init for Ocsigen Server config file"
+let section = Logs.Src.create "ocsigen:ocsipersist:pgsql:config"
+
+let () =
+  Logs.info ~src:section (fun fmt -> fmt "Init for Ocsigen Server config file")
 
 let parse_global_config = function
   | [] -> ()
@@ -35,4 +37,4 @@ let parse_global_config = function
            "Unexpected content inside Ocsipersist config"
 
 let init_fun config = parse_global_config config; Ocsipersist.init ()
-let _ = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun ()
+let () = Ocsigen_extensions.register ~name:"ocsipersist" ~init_fun ()

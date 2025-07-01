@@ -2,6 +2,7 @@
 (name ocsipersist)
 
 (generate_opam_files true)
+(cram enable)
 
 (maintainers "Jan Rochel <jan@besport.com>")
 (authors "Ocsigen team <dev@ocsigen.org>")
@@ -14,7 +15,7 @@
  (description "This is an virtual library defining a unified frontend for a number of key-value storage implementations. Implementations of the following backends currently exist: DBM, PostgreSQL, SQLite.")
  (depends
   (ocsipersist-lib (= :version))
-  (lwt (>= 4.2.0)))
+  eio)
  (conflicts
   (ocsipersist-dbm (<> :version))
   (ocsipersist-pgsql (<> :version))
@@ -27,7 +28,7 @@
  (depends
   (ocsipersist (= :version))
   (lwt (>= 4.2.0))
-  lwt_log
+  logs
   dbm))
 
 (package
@@ -44,7 +45,7 @@
  (synopsis "Persistent key/value storage for OCaml - support library")
  (description "This library defines signatures and auxiliary tools for defining backends for the Ocsipersist frontent. Ocsipersist is used pervasively in Eliom/Ocsigen to handle sessions and references. It can be used as an extension for ocsigenserver or as a library. Implementations of the following backends currently exist: DBM, PostgreSQL, SQLite.")
  (depends
-  (lwt (>= 4.2.0))))
+  eio))
 
 (package
  (name ocsipersist-pgsql)
@@ -54,7 +55,7 @@
   (ocaml (>= 4.08))
   (ocsipersist (= :version))
   (lwt (>= 4.2.0))
-  lwt_log
+  logs
   pgocaml))
 
 (package
@@ -71,8 +72,8 @@
  (synopsis "Persistent key/value storage for OCaml using SQLite")
  (description "This library provides a SQLite backend for the unified key/value storage frontend as defined in the ocsipersist package.")
  (depends
-  (lwt (>= 4.2.0))
-  lwt_log
+  eio
+  logs
   ocsipersist
   sqlite3))
 

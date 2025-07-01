@@ -1,8 +1,9 @@
+open Eio.Std
+
 module type TABLE = Ocsipersist_lib.Sigs.TABLE
 
-let section = Lwt_log.Section.make "ocsigen:ocsipersist:sqlite"
+let section = Logs.Src.create "ocsigen:ocsipersist:sqlite"
 
-open Lwt.Infix
 open Sqlite3
 open Printf
 
@@ -10,21 +11,25 @@ module Aux = struct
   (* This reference is overwritten when the init function (at the end of the file)
    is run, which occurs when the extension is loaded *)
   let db_file = Ocsipersist_settings.db_file
-  let yield () = Thread.yield ()
+  let yield () = Fiber.yield ()
+  let domain_mgr = ref None
+  let get_domain_mgr () : _ Eio.Domain_manager.t = Option.get !domain_mgr
 
   let rec bind_safely stmt = function
     | [] -> stmt
     | (value, name) :: q as l -> (
-      match Sqlite3.bind stmt (bind_parameter_index stmt name) value with
-      | Rc.OK -> bind_safely stmt q
-      | Rc.BUSY | Rc.LOCKED -> yield (); bind_safely stmt l
-      | rc ->
-          ignore (finalize stmt);
-          failwith (Rc.to_string rc))
+        match Sqlite3.bind stmt (bind_parameter_index stmt name) value with
+        | Rc.OK -> bind_safely stmt q
+        | Rc.BUSY | Rc.LOCKED ->
+            yield ();
+            bind_safely stmt l
+        | rc ->
+            ignore (finalize stmt : Rc.t);
+            failwith (Rc.to_string rc))
 
   let close_safely db =
-    if not (db_close db)
-    then Lwt_log.ign_error ~section "Couldn't close database"
+    if not (db_close db) then
+      Logs.err ~src:section (fun fmt -> fmt "Couldn't close database")
 
   let m = Mutex.create ()
 
@@ -32,14 +37,22 @@ module Aux = struct
     let aux () =
       let db =
         Mutex.lock m;
-        try db_open !db_file with e -> Mutex.unlock m; raise e
+        try db_open !db_file
+        with e ->
+          Mutex.unlock m;
+          raise e
       in
       try
         let r = f db in
-        close_safely db; Mutex.unlock m; r
-      with e -> close_safely db; Mutex.unlock m; raise e
+        close_safely db;
+        Mutex.unlock m;
+        r
+      with e ->
+        close_safely db;
+        Mutex.unlock m;
+        raise e
     in
-    Lwt_preemptive.detach aux ()
+    Eio.Domain_manager.run (get_domain_mgr ()) aux
 
   (* Référence indispensable pour les codes de retours et leur signification :
    * http://sqlite.org/capi3ref.html
@@ -49,41 +62,47 @@ module Aux = struct
   let db_create table =
     let sql =
       sprintf
-        "CREATE TABLE IF NOT EXISTS %s (key TEXT, value BLOB,  PRIMARY KEY(key) ON CONFLICT REPLACE)"
+        "CREATE TABLE IF NOT EXISTS %s (key TEXT, value BLOB,  PRIMARY \
+         KEY(key) ON CONFLICT REPLACE)"
         table
     in
     let create db =
       let stmt = prepare db sql in
       let rec aux () =
         match step stmt with
-        | Rc.DONE -> ignore (finalize stmt)
-        | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
+        | Rc.DONE -> ignore (finalize stmt : Rc.t)
+        | Rc.BUSY | Rc.LOCKED ->
+            yield ();
+            aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
     in
-    exec_safely create >>= fun () -> Lwt.return table
+    exec_safely create;
+    table
 
   let db_get, db_replace =
     let get (table, key) db =
       let sqlget = sprintf "SELECT value FROM %s WHERE key = :key " table in
-      let stmt = bind_safely (prepare db sqlget) [Data.TEXT key, ":key"] in
+      let stmt = bind_safely (prepare db sqlget) [ (Data.TEXT key, ":key") ] in
       let rec aux () =
         match step stmt with
         | Rc.ROW ->
             let value =
               match column stmt 0 with Data.BLOB s -> s | _ -> assert false
             in
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             value
         | Rc.DONE ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             raise Not_found
-        | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
+        | Rc.BUSY | Rc.LOCKED ->
+            yield ();
+            aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -94,20 +113,22 @@ module Aux = struct
       in
       let stmt =
         bind_safely (prepare db sqlreplace)
-          [Data.TEXT key, ":key"; Data.BLOB value, ":value"]
+          [ (Data.TEXT key, ":key"); (Data.BLOB value, ":value") ]
       in
       let rec aux () =
         match step stmt with
-        | Rc.DONE -> ignore (finalize stmt)
-        | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
+        | Rc.DONE -> ignore (finalize stmt : Rc.t)
+        | Rc.BUSY | Rc.LOCKED ->
+            yield ();
+            aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
     in
-    ( (fun tablekey -> exec_safely (get tablekey))
-    , fun tablekey value -> exec_safely (replace tablekey value) )
+    ( (fun tablekey -> exec_safely (get tablekey)),
+      fun tablekey value -> exec_safely (replace tablekey value) )
 end
 
 module Store = struct
@@ -119,25 +140,26 @@ module Store = struct
     Aux.db_create s
 
   let make_persistent_lazy_lwt ~store ~name ~default =
-    let pvname = store, name in
-    Lwt.catch
-      (fun () -> Aux.db_get pvname >>= fun _ -> Lwt.return ())
-      (function
-         | Not_found ->
-             default () >>= fun def ->
-             Aux.db_replace pvname (Marshal.to_string def [])
-         | e -> Lwt.fail e)
-    >>= fun () -> Lwt.return pvname
+    let pvname = (store, name) in
+    (try
+       let _ = Aux.db_get pvname in
+       ()
+     with
+    | Not_found ->
+        let def = default () in
+        Aux.db_replace pvname (Marshal.to_string def [])
+    | e -> raise e);
+    pvname
 
   let make_persistent_lazy ~store ~name ~default =
-    let default () = Lwt.wrap default in
     make_persistent_lazy_lwt ~store ~name ~default
 
   let make_persistent ~store ~name ~default =
     make_persistent_lazy ~store ~name ~default:(fun () -> default)
 
   let get (pvname : 'a t) : 'a =
-    Aux.db_get pvname >>= fun r -> Lwt.return (Marshal.from_string r 0)
+    let r = Aux.db_get pvname in
+    Marshal.from_string r 0
 
   let set pvname v =
     let data = Marshal.to_string v [] in
@@ -160,8 +182,8 @@ module Functorial = struct
 
   module Table
       (T : sig
-         val name : string
-       end)
+        val name : string
+      end)
       (Key : COLUMN)
       (Value : COLUMN) :
     Ocsipersist_lib.Sigs.TABLE with type key = Key.t and type value = Value.t =
@@ -175,40 +197,49 @@ module Functorial = struct
       let create db =
         let sql =
           sprintf
-            "CREATE TABLE IF NOT EXISTS %s
-             (key %s, value %s, PRIMARY KEY (key) ON CONFLICT REPLACE)"
+            "CREATE TABLE IF NOT EXISTS %s\n\
+            \             (key %s, value %s, PRIMARY KEY (key) ON CONFLICT \
+             REPLACE)"
             name Key.column_type Value.column_type
         in
         let stmt = prepare db sql in
         let rec aux () =
           match step stmt with
-          | Rc.DONE -> ignore (finalize stmt)
-          | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
+          | Rc.DONE -> ignore (finalize stmt : Rc.t)
+          | Rc.BUSY | Rc.LOCKED ->
+              Aux.yield ();
+              aux ()
           | rc ->
-              ignore (finalize stmt);
+              ignore (finalize stmt : Rc.t);
               failwith (Rc.to_string rc)
         in
         aux ()
       in
       lazy (Aux.exec_safely create)
 
-    let with_table f = Lazy.force init >>= fun () -> Aux.exec_safely f
+    let with_table f =
+      Lazy.force init;
+      Aux.exec_safely f
 
     let db_get key db =
       let sqlget = sprintf "SELECT value FROM %s WHERE key = :key" name in
-      let stmt = Aux.bind_safely (prepare db sqlget) [Key.encode key, ":key"] in
+      let stmt =
+        Aux.bind_safely (prepare db sqlget) [ (Key.encode key, ":key") ]
+      in
       let rec aux () =
         match step stmt with
         | Rc.ROW ->
             let value = column stmt 0 in
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             value
         | Rc.DONE ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             raise Not_found
-        | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
+        | Rc.BUSY | Rc.LOCKED ->
+            Aux.yield ();
+            aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       Value.decode @@ aux ()
@@ -217,27 +248,33 @@ module Functorial = struct
       let sqlreplace = sprintf "INSERT INTO %s VALUES (:key, :value)" name in
       let stmt =
         Aux.bind_safely (prepare db sqlreplace)
-          [Key.encode key, ":key"; Value.encode value, ":value"]
+          [ (Key.encode key, ":key"); (Value.encode value, ":value") ]
       in
       let rec aux () =
         match step stmt with
-        | Rc.DONE -> ignore (finalize stmt)
-        | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
+        | Rc.DONE -> ignore (finalize stmt : Rc.t)
+        | Rc.BUSY | Rc.LOCKED ->
+            Aux.yield ();
+            aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
 
     let db_remove key db =
       let sql = sprintf "DELETE FROM %s WHERE key = :key " name in
-      let stmt = Aux.bind_safely (prepare db sql) [Key.encode key, ":key"] in
+      let stmt =
+        Aux.bind_safely (prepare db sql) [ (Key.encode key, ":key") ]
+      in
       let rec aux () =
         match step stmt with
-        | Rc.DONE -> ignore (finalize stmt)
-        | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
+        | Rc.DONE -> ignore (finalize stmt : Rc.t)
+        | Rc.BUSY | Rc.LOCKED ->
+            Aux.yield ();
+            aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -253,14 +290,16 @@ module Functorial = struct
               | Data.INT s -> Int64.to_int s
               | _ -> assert false
             in
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             value
         | Rc.DONE ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             raise Not_found
-        | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
+        | Rc.BUSY | Rc.LOCKED ->
+            Aux.yield ();
+            aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -268,12 +307,12 @@ module Functorial = struct
     let db_iter ?gt ?geq ?lt ?leq table rowid db =
       let sql =
         sprintf
-          "SELECT key, value, ROWID FROM %s
-                 WHERE ROWID > :rowid
-                 AND coalesce (key > :gt, true)
-                 AND coalesce (key >= :geq, true)
-                 AND coalesce (key < :lt, true)
-                 AND coalesce (key <= :leq, true)"
+          "SELECT key, value, ROWID FROM %s\n\
+          \                 WHERE ROWID > :rowid\n\
+          \                 AND coalesce (key > :gt, true)\n\
+          \                 AND coalesce (key >= :geq, true)\n\
+          \                 AND coalesce (key < :lt, true)\n\
+          \                 AND coalesce (key <= :leq, true)"
           table
       in
       let encode_key_opt = function
@@ -286,26 +325,30 @@ module Functorial = struct
       and leq_sql = encode_key_opt leq in
       let stmt =
         Aux.bind_safely (prepare db sql)
-          [ Data.INT rowid, ":rowid"
-          ; gt_sql, ":gt"
-          ; geq_sql, ":geq"
-          ; lt_sql, ":lt"
-          ; leq_sql, ":leq" ]
+          [
+            (Data.INT rowid, ":rowid");
+            (gt_sql, ":gt");
+            (geq_sql, ":geq");
+            (lt_sql, ":lt");
+            (leq_sql, ":leq");
+          ]
       in
       let rec aux () =
         match step stmt with
         | Rc.ROW -> (
-          match column stmt 0, column stmt 1, column stmt 2 with
-          | k, v, Data.INT rowid ->
-              ignore (finalize stmt);
-              Some (k, v, rowid)
-          | _ -> assert false)
+            match (column stmt 0, column stmt 1, column stmt 2) with
+            | k, v, Data.INT rowid ->
+                ignore (finalize stmt : Rc.t);
+                Some (k, v, rowid)
+            | _ -> assert false)
         | Rc.DONE ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             None
-        | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
+        | Rc.BUSY | Rc.LOCKED ->
+            Aux.yield ();
+            aux ()
         | rc ->
-            ignore (finalize stmt);
+            ignore (finalize stmt : Rc.t);
             failwith (Rc.to_string rc)
       in
       aux ()
@@ -315,7 +358,7 @@ module Functorial = struct
 
     let replace_if_exists k v =
       with_table @@ fun db ->
-      ignore (db_get k db);
+      ignore (db_get k db : value);
       db_replace k v db
 
     let remove key = with_table @@ db_remove key
@@ -331,13 +374,13 @@ module Functorial = struct
       let i = ref 0L in
       let rec aux rowid beg =
         match count with
-        | Some c when !i >= c -> Lwt.return beg
+        | Some c when !i >= c -> beg
         | _ -> (
             i := Int64.succ !i;
-            with_table (db_iter ?gt ?geq ?lt ?leq name rowid) >>= function
-            | None -> Lwt.return beg
+            match with_table (db_iter ?gt ?geq ?lt ?leq name rowid) with
+            | None -> beg
             | Some (k, v, rowid') ->
-                f (Key.decode k) (Value.decode v) beg >>= aux rowid')
+                (aux rowid') (f (Key.decode k) (Value.decode v) beg))
       in
       aux Int64.zero beg
 
@@ -350,12 +393,12 @@ module Functorial = struct
     let iter_block ?count ?gt ?geq ?lt ?leq f =
       let sql =
         sprintf
-          "SELECT key, value FROM %s
-         WHERE coalesce (key > :gt, true)
-           AND coalesce (key >= :geq, true)
-           AND coalesce (key < :lt, true)
-           AND coalesce (key <= :leq, true)
-         LIMIT coalesce (:count, -1)"
+          "SELECT key, value FROM %s\n\
+          \         WHERE coalesce (key > :gt, true)\n\
+          \           AND coalesce (key >= :geq, true)\n\
+          \           AND coalesce (key < :lt, true)\n\
+          \           AND coalesce (key <= :leq, true)\n\
+          \         LIMIT coalesce (:count, -1)"
           name
       in
       let encode_key_opt = function
@@ -372,21 +415,25 @@ module Functorial = struct
       let iter db =
         let stmt =
           Aux.bind_safely (prepare db sql)
-            [ gt_sql, ":gt"
-            ; geq_sql, ":geq"
-            ; lt_sql, ":lt"
-            ; leq_sql, ":leq"
-            ; count_sql, ":count" ]
+            [
+              (gt_sql, ":gt");
+              (geq_sql, ":geq");
+              (lt_sql, ":lt");
+              (leq_sql, ":leq");
+              (count_sql, ":count");
+            ]
         in
         let rec aux () =
           match step stmt with
           | Rc.ROW ->
               f (Key.decode @@ column stmt 0) (Value.decode @@ column stmt 1);
               aux ()
-          | Rc.DONE -> ignore (finalize stmt)
-          | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
+          | Rc.DONE -> ignore (finalize stmt : Rc.t)
+          | Rc.BUSY | Rc.LOCKED ->
+              Aux.yield ();
+              aux ()
           | rc ->
-              ignore (finalize stmt);
+              ignore (finalize stmt : Rc.t);
               failwith (Rc.to_string rc)
         in
         aux ()
@@ -396,12 +443,12 @@ module Functorial = struct
     let length () = with_table @@ db_length name
 
     module Variable = Ocsipersist_lib.Variable (struct
-        type k = key
-        type v = value
+      type k = key
+      type v = value
 
-        let find = find
-        let add = add
-      end)
+      let find = find
+      let add = add
+    end)
   end
 
   module Column = struct
@@ -422,8 +469,8 @@ module Functorial = struct
     end
 
     module Marshal (C : sig
-        type t
-      end) : COLUMN with type t = C.t = struct
+      type t
+    end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "blob"
@@ -441,6 +488,10 @@ module Ref = Ocsipersist_lib.Ref (Store)
 
 type 'value table = 'value Polymorphic.table
 
-let init () =
-  (* We check that we can access the database *)
-  Lwt_main.run (Aux.exec_safely (fun _ -> ()))
+let init ~env =
+  Switch.run (fun sw ->
+    Aux.domain_mgr := Some env#domain_mgr;
+    Fiber.with_binding Ocsipersist_lib.current_switch sw (fun () ->
+      (* We check that we can access the database *)
+      (* TODO: lwt-to-direct-style: [Eio_main.run] argument used to be a [Lwt] promise and is now a [fun]. Make sure no asynchronous or IO calls are done outside of this [fun]. *)
+      Aux.exec_safely (fun _ -> ())))

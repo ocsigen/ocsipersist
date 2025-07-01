@@ -1,6 +1,8 @@
-open Lwt.Syntax
+open Eio.Std
 
 (** This modules provides tools for creating more implementations of the {!Ocsipersist} virtual module. *)
+
+let current_switch : Switch.t Fiber.key = Fiber.create_key ()
 
 module Sigs = struct
   module type TABLE = sig
@@ -8,58 +10,58 @@ module Sigs = struct
     type value
 
     val name : string
-    val find : key -> value Lwt.t
-    val add : key -> value -> unit Lwt.t
-    val replace_if_exists : key -> value -> unit Lwt.t
-    val remove : key -> unit Lwt.t
-    val modify_opt : key -> (value option -> value option) -> unit Lwt.t
-    val length : unit -> int Lwt.t
+    val find : key -> value
+    val add : key -> value -> unit
+    val replace_if_exists : key -> value -> unit
+    val remove : key -> unit
+    val modify_opt : key -> (value option -> value option) -> unit
+    val length : unit -> int
 
     val iter :
-       ?count:int64
-      -> ?gt:key
-      -> ?geq:key
-      -> ?lt:key
-      -> ?leq:key
-      -> (key -> value -> unit Lwt.t)
-      -> unit Lwt.t
+      ?count:int64 ->
+      ?gt:key ->
+      ?geq:key ->
+      ?lt:key ->
+      ?leq:key ->
+      (key -> value -> unit) ->
+      unit
 
     val fold :
-       ?count:int64
-      -> ?gt:key
-      -> ?geq:key
-      -> ?lt:key
-      -> ?leq:key
-      -> (key -> value -> 'a -> 'a Lwt.t)
-      -> 'a
-      -> 'a Lwt.t
+      ?count:int64 ->
+      ?gt:key ->
+      ?geq:key ->
+      ?lt:key ->
+      ?leq:key ->
+      (key -> value -> 'a -> 'a) ->
+      'a ->
+      'a
 
     val iter_block :
-       ?count:int64
-      -> ?gt:key
-      -> ?geq:key
-      -> ?lt:key
-      -> ?leq:key
-      -> (key -> value -> unit)
-      -> unit Lwt.t
+      ?count:int64 ->
+      ?gt:key ->
+      ?geq:key ->
+      ?lt:key ->
+      ?leq:key ->
+      (key -> value -> unit) ->
+      unit
 
     val iter_batch :
-       ?count:int64
-      -> ?gt:key
-      -> ?geq:key
-      -> ?lt:key
-      -> ?leq:key
-      -> ((key * value) list -> unit Lwt.t)
-      -> unit Lwt.t
+      ?count:int64 ->
+      ?gt:key ->
+      ?geq:key ->
+      ?lt:key ->
+      ?leq:key ->
+      ((key * value) list -> unit) ->
+      unit
 
     module Variable : sig
       type t
 
       val make : name:key -> default:value -> t
       val make_lazy : name:key -> default:(unit -> value) -> t
-      val make_lazy_lwt : name:key -> default:(unit -> value Lwt.t) -> t
-      val get : t -> value Lwt.t
-      val set : t -> value -> unit Lwt.t
+      val make_lazy_lwt : name:key -> default:(unit -> value) -> t
+      val get : t -> value
+      val set : t -> value -> unit
     end
   end
 
@@ -76,8 +78,8 @@ module Sigs = struct
 
     module Table
         (T : sig
-           val name : string
-         end)
+          val name : string
+        end)
         (Key : COLUMN)
         (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t
 
@@ -86,8 +88,8 @@ module Sigs = struct
       module Float : COLUMN with type t = float
 
       module Marshal (C : sig
-          type t
-        end) : COLUMN with type t = C.t
+        type t
+      end) : COLUMN with type t = C.t
     end
   end
 
@@ -95,54 +97,50 @@ module Sigs = struct
     type 'value table
     (** Type of persistent table *)
 
-    val table_name : 'value table -> string Lwt.t
+    val table_name : 'value table -> string
     (** returns the name of the table  *)
 
-    val open_table : string -> 'value table Lwt.t
+    val open_table : string -> 'value table
     (** Open a table (and create it if it does not exist)  *)
 
-    val find : 'value table -> string -> 'value Lwt.t
+    val find : 'value table -> string -> 'value
     (** [find table key] gives the value associated to [key].
         Fails with [Not_found] if not found. *)
 
-    val add : 'value table -> string -> 'value -> unit Lwt.t
+    val add : 'value table -> string -> 'value -> unit
     (** [add table key value] associates [value] to [key].
         If the database already contains data associated with [key],
         that data is discarded and silently replaced by the new data.
     *)
 
-    val replace_if_exists : 'value table -> string -> 'value -> unit Lwt.t
+    val replace_if_exists : 'value table -> string -> 'value -> unit
     (** [replace_if_exists table key value]
         associates [value] to [key] only if [key] is already bound.
         If the database does not contain any data associated with [key],
         fails with [Not_found].
     *)
 
-    val remove : 'value table -> string -> unit Lwt.t
+    val remove : 'value table -> string -> unit
     (** [remove table key] removes the entry in the table if it exists *)
 
-    val length : 'value table -> int Lwt.t
+    val length : 'value table -> int
     (** Size of a table. *)
 
-    val iter_step : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
+    val iter_step : (string -> 'a -> unit) -> 'a table -> unit
     (** Important warning: this iterator may not iter on all data of the table
         if another thread is modifying it in the same time. Nonetheless, it should
         not miss more than a very few data from time to time, except if the table
         is very old (at least 9 223 372 036 854 775 807 insertions).
     *)
 
-    val fold_step :
-       (string -> 'a -> 'b -> 'b Lwt.t)
-      -> 'a table
-      -> 'b
-      -> 'b Lwt.t
+    val fold_step : (string -> 'a -> 'b -> 'b) -> 'a table -> 'b -> 'b
     (** Important warning: this iterator may not iter on all data of the table
         if another thread is modifying it in the same time. Nonetheless, it should
         not miss more than a very few data from time to time, except if the table
         is very old (at least 9 223 372 036 854 775 807 insertions).
     *)
 
-    val iter_block : (string -> 'a -> unit) -> 'a table -> unit Lwt.t
+    val iter_block : (string -> 'a -> unit) -> 'a table -> unit
     (** MAJOR WARNING: Unlike iter_step, this iterator won't miss any
         entry and will run in one shot. It is therefore more efficient, BUT:
         it will lock the WHOLE database during its execution,
@@ -169,10 +167,10 @@ module Sigs = struct
         Be careful to change this name every time you change the type of the
         value. *)
 
-    val get : 'a t -> 'a Lwt.t
+    val get : 'a t -> 'a
     (** Get the value of a reference *)
 
-    val set : 'a t -> 'a -> unit Lwt.t
+    val set : 'a t -> 'a -> unit
     (** Set the value of a reference *)
   end
 
@@ -184,42 +182,35 @@ module Sigs = struct
     (** Data are divided into stores.
         Create one store for your project, where you will save all your data. *)
 
-    val open_store : string -> store Lwt.t
+    val open_store : string -> store
     (** Open a store (and create it if it does not exist)  *)
 
-    val make_persistent : store:store -> name:string -> default:'a -> 'a t Lwt.t
+    val make_persistent : store:store -> name:string -> default:'a -> 'a t
     (** [make_persistent store name default] find a persistent value
         named [name] in store [store]
         from database, or create it with the default value [default] if it
         does not exist. *)
 
     val make_persistent_lazy :
-       store:store
-      -> name:string
-      -> default:(unit -> 'a)
-      -> 'a t Lwt.t
+      store:store -> name:string -> default:(unit -> 'a) -> 'a t
     (** Same as make_persistent but the default value is evaluated only
         if needed
     *)
 
     val make_persistent_lazy_lwt :
-       store:store
-      -> name:string
-      -> default:(unit -> 'a Lwt.t)
-      -> 'a t Lwt.t
+      store:store -> name:string -> default:(unit -> 'a) -> 'a t
     (** Lwt version of make_persistent_lazy.
     *)
 
-    val get : 'a t -> 'a Lwt.t
+    val get : 'a t -> 'a
     (** [get pv] gives the value of [pv] *)
 
-    val set : 'a t -> 'a -> unit Lwt.t
+    val set : 'a t -> 'a -> unit
     (** [set pv value] sets a persistent value [pv] to [value] *)
   end
 end
 
 open Sigs
-open Lwt.Infix
 
 (** deriving polymorphic interface from the functorial one *)
 module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
@@ -236,14 +227,12 @@ module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
         end)
         (Column.String)
         (Column.Marshal (struct
-             type t = a
-           end))
+          type t = a
+        end))
     in
-    Lwt.return (module T : POLYMORPHIC with type value = a)
+    (module T : POLYMORPHIC with type value = a)
 
-  let table_name (type a) (module T : POLYMORPHIC with type value = a) =
-    Lwt.return T.name
-
+  let table_name (type a) (module T : POLYMORPHIC with type value = a) = T.name
   let find (type a) (module T : POLYMORPHIC with type value = a) = T.find
   let add (type a) (module T : POLYMORPHIC with type value = a) = T.add
 
@@ -264,59 +253,53 @@ module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
 end
 
 module Variable (T : sig
-    type k
-    type v
+  type k
+  type v
 
-    val find : k -> v Lwt.t
-    val add : k -> v -> unit Lwt.t
-  end) =
+  val find : k -> v
+  val add : k -> v -> unit
+end) =
 struct
-  type t = {name : T.k; default : unit -> T.v Lwt.t}
+  type t = { name : T.k; default : unit -> T.v }
 
-  let make_lazy_lwt ~name ~default = {name; default}
+  let make_lazy_lwt ~name ~default = { name; default }
+  let make_lazy ~name ~default = { name; default = (fun () -> default ()) }
+  let make ~name ~default = { name; default = (fun () -> default) }
 
-  let make_lazy ~name ~default =
-    {name; default = (fun () -> Lwt.return @@ default ())}
+  let get { name; default } =
+    try T.find name
+    with Not_found ->
+      let d = default () in
+      T.add name d;
+      d
 
-  let make ~name ~default = {name; default = (fun () -> Lwt.return default)}
-
-  let get {name; default} =
-    Lwt.catch
-      (fun () -> T.find name)
-      (function
-         | Not_found ->
-             default () >>= fun d ->
-             T.add name d >>= fun () -> Lwt.return d
-         | exc -> Lwt.reraise exc)
-
-  let set {name} = T.add name
+  let set { name } = T.add name
 end
 
 module Ref (Store : STORE) = struct
   let store = lazy (Store.open_store "__ocsipersist_ref_store__")
 
-  type 'a t = Ref of 'a ref | Per of 'a Store.t Lwt.t
+  type 'a t = Ref of 'a ref | Per of 'a Store.t Lazy.t
 
   let ref ?persistent v =
     match persistent with
     | None -> Ref (ref v)
     | Some name ->
         Per
-          (let* store = Lazy.force store in
-           Store.make_persistent ~store ~name ~default:v)
+          (lazy
+            (let store = Lazy.force store in
+             Store.make_persistent ~store ~name ~default:v))
 
   let get = function
-    | Ref r -> Lwt.return !r
+    | Ref r -> !r
     | Per r ->
-        let* r = r in
+        let (lazy r) = r in
         Store.get r
 
   let set r v =
     match r with
-    | Ref r ->
-        r := v;
-        Lwt.return_unit
+    | Ref r -> r := v
     | Per r ->
-        let* r = r in
+        let (lazy r) = r in
         Store.set r v
 end

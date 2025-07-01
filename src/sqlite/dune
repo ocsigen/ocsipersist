@@ -3,7 +3,13 @@
  (public_name ocsipersist-sqlite)
  (implements ocsipersist)
  (modules ocsipersist)
- (libraries sqlite3 lwt_log ocsipersist_lib ocsipersist_sqlite_settings))
+ (libraries
+  sqlite3
+  eio
+  eio_main
+  logs
+  ocsipersist_lib
+  ocsipersist_sqlite_settings))
 
 ; Configuration functions (part of ocsipersist-sqlite package):
 

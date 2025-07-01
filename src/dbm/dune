@@ -18,7 +18,7 @@
   ocsipersist_settings)
  (libraries
   dbm
-  lwt_log
+  logs
   ocsipersist_dbmtypes
   ocsipersist_lib
   ocsipersist_dbm_settings))
