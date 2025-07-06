@@ -5,7 +5,7 @@ open Lwt.Infix
 
 module type TABLE = Ocsipersist_lib.Sigs.TABLE
 
-let section = Lwt_log.Section.make "ocsigen:ocsipersist:dbm"
+let section = Logs.Src.create "ocsigen:ocsipersist:dbm"
 
 exception Ocsipersist_error
 
@@ -25,9 +25,9 @@ module Db = struct
          Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
          Lwt.return socket)
       (fun _ ->
-         Lwt_log.ign_warning_f ~section
-           "Launching a new Ocsidbm process: %s on directory %s."
-           !Config.ocsidbm !Config.directory;
+         Logs.warn ~src:section (fun fmt ->
+           fmt "Launching a new Ocsidbm process: %s on directory %s."
+             !Config.ocsidbm !Config.directory);
          let param = [|!Config.ocsidbm; !Config.directory|] in
          let child () =
            let log =
@@ -63,14 +63,15 @@ module Db = struct
       (fun e ->
          if i = 0
          then (
-           Lwt_log.ign_error_f ~section
-             "Cannot connect to Ocsidbm. Will continue without persistent session support. Error message is: %s .Have a look at the logs to see if there is an error message from the Ocsidbm process."
-             (match e with
-             | Unix.Unix_error (a, b, c) ->
-                 Printf.sprintf "%a in %s(%s)"
-                   (fun () -> Unix.error_message)
-                   a b c
-             | _ -> Printexc.to_string e);
+           Logs.err ~src:section (fun fmt ->
+             fmt
+               "Cannot connect to Ocsidbm. Will continue without persistent session support. Error message is: %s .Have a look at the logs to see if there is an error message from the Ocsidbm process."
+               (match e with
+               | Unix.Unix_error (a, b, c) ->
+                   Printf.sprintf "%a in %s(%s)"
+                     (fun () -> Unix.error_message)
+                     a b c
+               | _ -> Printexc.to_string e));
            Lwt.fail e)
          else Lwt_unix.sleep 2.1 >>= fun () -> get_indescr (i - 1))
 
@@ -327,8 +328,9 @@ type 'value table = 'value Polymorphic.table
 let init () =
   if !Ocsipersist_settings.delay_loading
   then
-    Lwt_log.ign_warning ~section "Asynchronuous initialization (may fail later)"
-  else Lwt_log.ign_warning ~section "Initializing ...";
+    Logs.warn ~src:section (fun fmt ->
+      fmt "Asynchronuous initialization (may fail later)")
+  else Logs.warn ~src:section (fun fmt -> fmt "Initializing ...");
   let indescr = Db.get_indescr 2 in
   if !Ocsipersist_settings.delay_loading
   then (
@@ -341,4 +343,4 @@ let init () =
     Ocsipersist_settings.inch := Lwt.return (Lwt_io.of_fd ~mode:Lwt_io.input r);
     Ocsipersist_settings.outch :=
       Lwt.return (Lwt_io.of_fd ~mode:Lwt_io.output r);
-    Lwt_log.ign_warning ~section "...Initialization complete"
+    Logs.warn ~src:section (fun fmt -> fmt "...Initialization complete")

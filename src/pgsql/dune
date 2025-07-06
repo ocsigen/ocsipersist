@@ -3,7 +3,7 @@
  (public_name ocsipersist-pgsql)
  (implements ocsipersist)
  (modules :standard \ ocsipersist_config ocsipersist_settings)
- (libraries pgocaml lwt_log ocsipersist_lib ocsipersist_pgsql_settings))
+ (libraries pgocaml lwt.unix logs ocsipersist_lib ocsipersist_pgsql_settings))
 
 ; Configuration functions (part of ocsipersist-pgsql package):
 
