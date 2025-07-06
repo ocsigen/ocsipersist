@@ -27,7 +27,7 @@
  (depends
   (ocsipersist (= :version))
   (lwt (>= 4.2.0))
-  lwt_log
+  logs
   dbm))
 
 (package
@@ -54,7 +54,7 @@
   (ocaml (>= 4.08))
   (ocsipersist (= :version))
   (lwt (>= 4.2.0))
-  lwt_log
+  logs
   pgocaml))
 
 (package
@@ -72,7 +72,7 @@
  (description "This library provides a SQLite backend for the unified key/value storage frontend as defined in the ocsipersist package.")
  (depends
   (lwt (>= 4.2.0))
-  lwt_log
+  logs
   ocsipersist
   sqlite3))
 

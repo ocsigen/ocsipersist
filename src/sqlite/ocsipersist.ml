@@ -1,6 +1,6 @@
 module type TABLE = Ocsipersist_lib.Sigs.TABLE
 
-let section = Lwt_log.Section.make "ocsigen:ocsipersist:sqlite"
+let section = Logs.Src.create "ocsigen:ocsipersist:sqlite"
 
 open Lwt.Infix
 open Sqlite3
@@ -24,7 +24,7 @@ module Aux = struct
 
   let close_safely db =
     if not (db_close db)
-    then Lwt_log.ign_error ~section "Couldn't close database"
+    then Logs.err ~src:section (fun fmt -> fmt "Couldn't close database")
 
   let m = Mutex.create ()
 
