@@ -1,0 +1,6 @@
+(subdir
+ sqlite
+ (cram
+  (package ocsipersist-sqlite)
+  (deps
+   (package ocsipersist-sqlite))))
