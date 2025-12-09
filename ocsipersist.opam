@@ -9,7 +9,7 @@ license: "LGPL-2.1-only WITH OCaml-LGPL-linking-exception"
 homepage: "https://github.com/ocsigen/ocsipersist"
 bug-reports: "https://github.com/ocsigen/ocsipersist/issues"
 depends: [
-  "dune" {>= "2.8"}
+  "dune" {>= "3.18"}
   "ocsipersist-lib" {= version}
   "lwt" {>= "4.2.0"}
   "odoc" {with-doc}
@@ -34,3 +34,4 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/ocsigen/ocsipersist.git"
+x-maintenance-intent: ["(latest)"]
