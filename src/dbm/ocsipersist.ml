@@ -214,8 +214,26 @@ module Functorial = struct
     let iter ?count ?gt ?geq ?lt ?leq f =
       fold ?count ?gt ?geq ?lt ?leq (fun k v () -> f k v) ()
 
-    let iter_batch ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
-      failwith "Ocsipersist.iter_batch not implemented for DBM"
+    let max_batch_size = 1000L
+
+    let iter_batch ?count ?gt ?geq ?lt ?leq f =
+      let batch = ref [] in
+      let n = ref 0L in
+      let flush () =
+        match List.rev !batch with
+        | [] -> Lwt.return_unit
+        | items ->
+            batch := [];
+            n := 0L;
+            f items
+      in
+      fold ?count ?gt ?geq ?lt ?leq
+        (fun k v () ->
+           batch := (k, v) :: !batch;
+           n := Int64.succ !n;
+           if !n >= max_batch_size then flush () else Lwt.return_unit)
+        ()
+      >>= fun () -> flush ()
 
     let iter_block ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
       failwith
