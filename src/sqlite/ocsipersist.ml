@@ -142,10 +142,10 @@ module Store = struct
     Lwt.catch
       (fun () -> Aux.db_get pvname >>= fun _ -> Lwt.return ())
       (function
-         | Not_found ->
-             default () >>= fun def ->
-             Aux.db_replace pvname (Marshal.to_string def [])
-         | e -> Lwt.fail e)
+        | Not_found ->
+            default () >>= fun def ->
+            Aux.db_replace pvname (Marshal.to_string def [])
+        | e -> Lwt.fail e)
     >>= fun () -> Lwt.return pvname
 
   let make_persistent_lazy ~store ~name ~default =

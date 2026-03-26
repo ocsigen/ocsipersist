@@ -284,10 +284,10 @@ struct
     Lwt.catch
       (fun () -> T.find name)
       (function
-         | Not_found ->
-             default () >>= fun d ->
-             T.add name d >>= fun () -> Lwt.return d
-         | exc -> Lwt.reraise exc)
+        | Not_found ->
+            default () >>= fun d ->
+            T.add name d >>= fun () -> Lwt.return d
+        | exc -> Lwt.reraise exc)
 
   let set {name} = T.add name
 end

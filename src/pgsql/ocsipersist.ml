@@ -54,14 +54,14 @@ let use_pool f =
   Lwt.catch
     (fun () -> f db)
     (function
-       | PGOCaml.Error msg as e ->
-           Logs.err ~src:section (fun fmt ->
-             fmt "postgresql protocol error: %s" msg);
-           PGOCaml.close db >>= fun () -> Lwt.fail e
-       | Lwt.Canceled as e ->
-           Logs.err ~src:section (fun fmt -> fmt "thread canceled");
-           PGOCaml.close db >>= fun () -> Lwt.fail e
-       | e -> Lwt.fail e)
+      | PGOCaml.Error msg as e ->
+          Logs.err ~src:section (fun fmt ->
+            fmt "postgresql protocol error: %s" msg);
+          PGOCaml.close db >>= fun () -> Lwt.fail e
+      | Lwt.Canceled as e ->
+          Logs.err ~src:section (fun fmt -> fmt "thread canceled");
+          PGOCaml.close db >>= fun () -> Lwt.fail e
+      | e -> Lwt.fail e)
 
 (* escapes characters that are not in the range of 0x20..0x7e;
    this is to meet PostgreSQL's format requirements for text fields
@@ -94,10 +94,11 @@ let unescape_string str =
       incr i;
       if !i < len && str.[!i] = '\\'
       then (Buffer.add_char buf '\\'; incr i)
-      else if !i + 2 < len
-              && is_first_oct_digit str.[!i]
-              && is_oct_digit str.[!i + 1]
-              && is_oct_digit str.[!i + 2]
+      else if
+        !i + 2 < len
+        && is_first_oct_digit str.[!i]
+        && is_oct_digit str.[!i + 1]
+        && is_oct_digit str.[!i + 2]
       then (
         let byte = oct_val str.[!i] in
         incr i;
