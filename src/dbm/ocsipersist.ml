@@ -13,11 +13,21 @@ let socketname = "socket"
 
 module Config = Ocsipersist_settings
 
-module Aux = struct
-  external sys_exit : int -> 'a = "caml_sys_exit"
-end
-
 module Db = struct
+  let launch_ocsidbm () =
+    let param = [|!Config.ocsidbm; !Config.directory|] in
+    let log =
+      Unix.openfile !Config.error_log_path
+        [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND]
+        0o640
+    in
+    let devnull = Unix.openfile "/dev/null" [Unix.O_RDWR] 0 in
+    let pid = Unix.create_process !Config.ocsidbm param devnull devnull log in
+    Unix.close log;
+    Unix.close devnull;
+    (* ocsidbm detaches itself via setsid; we just need to reap the child *)
+    ignore (Unix.waitpid [Unix.WNOHANG] pid : int * Unix.process_status)
+
   let try_connect sname =
     Lwt.catch
       (fun () ->
@@ -28,35 +38,11 @@ module Db = struct
          Logs.warn ~src:section (fun fmt ->
            fmt "Launching a new Ocsidbm process: %s on directory %s."
              !Config.ocsidbm !Config.directory);
-         let param = [|!Config.ocsidbm; !Config.directory|] in
-         let child () =
-           let log =
-             Unix.openfile !Config.error_log_path
-               [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND]
-               0o640
-           in
-           Unix.dup2 log Unix.stderr;
-           Unix.close log;
-           let devnull = Unix.openfile "/dev/null" [Unix.O_WRONLY] 0 in
-           Unix.dup2 devnull Unix.stdout;
-           Unix.close devnull;
-           Unix.close Unix.stdin;
-           Unix.execvp !Config.ocsidbm param
-         in
-         let pid = Lwt_unix.fork () in
-         if pid = 0
-         then
-           if
-             (* double fork *)
-             Lwt_unix.fork () = 0
-           then child ()
-           else Aux.sys_exit 0
-         else
-           Lwt_unix.waitpid [] pid >>= fun _ ->
-           Lwt_unix.sleep 1.1 >>= fun () ->
-           let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
-           Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
-           Lwt.return socket)
+         launch_ocsidbm ();
+         Lwt_unix.sleep 1.1 >>= fun () ->
+         let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
+         Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
+         Lwt.return socket)
 
   let rec get_indescr i =
     Lwt.catch
