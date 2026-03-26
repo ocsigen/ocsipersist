@@ -4,3 +4,10 @@
   (package ocsipersist-sqlite)
   (deps
    (package ocsipersist-sqlite))))
+
+(subdir
+ pgsql
+ (cram
+  (package ocsipersist-pgsql)
+  (deps
+   (package ocsipersist-pgsql))))
