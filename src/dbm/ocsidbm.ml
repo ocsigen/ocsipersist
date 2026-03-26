@@ -67,8 +67,9 @@ let list_tables () =
       let n = Unix.readdir d in
       if Filename.check_suffix n suffix
       then Filename.chop_extension n :: aux ()
-      else if Filename.check_suffix n (suffix ^ ".pag")
-              (* depending on the version of dbm, there may be a .pag suffix *)
+      else if
+        Filename.check_suffix n (suffix ^ ".pag")
+        (* depending on the version of dbm, there may be a .pag suffix *)
       then Filename.chop_extension (Filename.chop_extension n) :: aux ()
       else aux ()
     with End_of_file -> Unix.closedir d; []
@@ -216,7 +217,7 @@ let execute outch =
              db_length t >>= fun i ->
              send outch (Value (Marshal.to_string i [])))
           (function
-             | Not_found -> send outch Dbm_not_found | e -> send outch (Error e)))
+            | Not_found -> send outch Dbm_not_found | e -> send outch (Error e)))
 
 let nb_clients = ref 0
 

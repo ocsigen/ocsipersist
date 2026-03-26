@@ -46,8 +46,9 @@ module Db = struct
          let pid = Lwt_unix.fork () in
          if pid = 0
          then
-           if (* double fork *)
-              Lwt_unix.fork () = 0
+           if
+             (* double fork *)
+             Lwt_unix.fork () = 0
            then child ()
            else Aux.sys_exit 0
          else
@@ -145,10 +146,10 @@ module Store = struct
     Lwt.catch
       (fun () -> Db.get pvname >>= fun _ -> Lwt.return ())
       (function
-         | Not_found ->
-             default () >>= fun def ->
-             Db.replace pvname (Marshal.to_string def [])
-         | e -> Lwt.fail e)
+        | Not_found ->
+            default () >>= fun def ->
+            Db.replace pvname (Marshal.to_string def [])
+        | e -> Lwt.fail e)
     >>= fun () -> Lwt.return pvname
 
   let make_persistent_lazy ~store ~name ~default =
