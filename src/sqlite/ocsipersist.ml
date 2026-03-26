@@ -27,17 +27,36 @@ module Aux = struct
     then Logs.err ~src:section (fun fmt -> fmt "Couldn't close database")
 
   let m = Mutex.create ()
+  let db_conn : Sqlite3.db option ref = ref None
+  let db_conn_file = ref ""
+
+  let get_db () =
+    match !db_conn with
+    | Some db when !db_conn_file = !db_file -> db
+    | Some db ->
+        close_safely db;
+        let db = db_open !db_file in
+        db_conn := Some db;
+        db_conn_file := !db_file;
+        db
+    | None ->
+        let db = db_open !db_file in
+        db_conn := Some db;
+        db_conn_file := !db_file;
+        db
+
+  let () =
+    at_exit (fun () ->
+      match !db_conn with Some db -> close_safely db | None -> ())
 
   let exec_safely f =
     let aux () =
-      let db =
-        Mutex.lock m;
-        try db_open !db_file with e -> Mutex.unlock m; raise e
-      in
+      Mutex.lock m;
       try
+        let db = get_db () in
         let r = f db in
-        close_safely db; Mutex.unlock m; r
-      with e -> close_safely db; Mutex.unlock m; raise e
+        Mutex.unlock m; r
+      with e -> Mutex.unlock m; raise e
     in
     Lwt_preemptive.detach aux ()
 
