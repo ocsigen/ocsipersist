@@ -307,8 +307,45 @@ module Functorial = struct
     let iter ?count ?gt ?geq ?lt ?leq f =
       fold ?count ?gt ?geq ?lt ?leq (fun k v () -> f k v) ()
 
-    let iter_batch ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
-      failwith "Ocsipersist.iter_batch not implemented for SQLite"
+    let max_batch_size = 1000L
+
+    let iter_batch ?count ?gt ?geq ?lt ?leq f =
+      let rec aux rowid remaining =
+        match remaining with
+        | Some c when c <= 0L -> Lwt.return_unit
+        | _ ->
+            let limit =
+              match remaining with
+              | Some c when c <= max_batch_size -> c
+              | _ -> max_batch_size
+            in
+            let batch = ref [] in
+            let n = ref 0L in
+            let last_rowid = ref rowid in
+            with_table (fun db ->
+              let rec collect () =
+                if !n >= limit
+                then ()
+                else
+                  match db_iter ?gt ?geq ?lt ?leq name !last_rowid db with
+                  | None -> ()
+                  | Some (k, v, rowid') ->
+                      batch := (Key.decode k, Value.decode v) :: !batch;
+                      last_rowid := rowid';
+                      n := Int64.succ !n;
+                      collect ()
+              in
+              collect ())
+            >>= fun () ->
+            let items = List.rev !batch in
+            if items = []
+            then Lwt.return_unit
+            else
+              f items >>= fun () ->
+              let remaining = Option.map (fun c -> Int64.sub c !n) remaining in
+              aux !last_rowid remaining
+      in
+      aux Int64.zero count
 
     let iter_block ?count ?gt ?geq ?lt ?leq f =
       let sql =
