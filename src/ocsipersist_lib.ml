@@ -304,7 +304,7 @@ struct
             T.add name d >>= fun () -> Lwt.return d
         | exc -> Lwt.reraise exc)
 
-  let set {name} = T.add name
+  let set {name; _} = T.add name
 end
 
 module Ref (Store : STORE) = struct
