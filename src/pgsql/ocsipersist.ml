@@ -220,7 +220,7 @@ module Functorial = struct
         sprintf "UPDATE %s SET value = $2 WHERE key = $1 RETURNING 0" name
       in
       Aux.exec db query (Aux.encode_pair key value) >>= function
-      | [] -> raise Not_found
+      | [] -> Lwt.fail Not_found
       | _ -> Lwt.return_unit
 
     let remove key =
@@ -230,25 +230,33 @@ module Functorial = struct
 
     let modify_opt key f =
       with_table @@ fun db ->
-      let query = sprintf "SELECT value FROM %s WHERE key = $1" name in
-      Aux.exec db query [Key.encode key] >>= fun value ->
-      let old_value =
-        match value with [Some v] :: _ -> Some (Value.decode v) | _ -> None
-      in
-      let new_value = f old_value in
-      match new_value = old_value, new_value with
-      | true, _ -> Lwt.return_unit
-      | false, Some new_value ->
-          let query =
-            sprintf
-              "INSERT INTO %s VALUES ($1, $2)
-                               ON CONFLICT (key) DO UPDATE SET value = $2"
-              name
-          in
-          Aux.exec_ db query @@ Aux.encode_pair key new_value
-      | false, None ->
-          let query = sprintf "DELETE FROM %s WHERE key = $1" name in
-          Aux.exec_ db query [Key.encode key]
+      Aux.exec_ db "BEGIN" [] >>= fun () ->
+      Lwt.catch
+        (fun () ->
+           let query = sprintf "SELECT value FROM %s WHERE key = $1" name in
+           Aux.exec db query [Key.encode key] >>= fun value ->
+           let old_value =
+             match value with
+             | [Some v] :: _ -> Some (Value.decode v)
+             | _ -> None
+           in
+           (match f old_value with
+             | Some new_value ->
+                 let query =
+                   sprintf
+                     "INSERT INTO %s VALUES ($1, $2)
+                     ON CONFLICT (key) DO UPDATE SET value = $2"
+                     name
+                 in
+                 Aux.exec_ db query @@ Aux.encode_pair key new_value
+             | None -> (
+               match old_value with
+               | Some _ ->
+                   let query = sprintf "DELETE FROM %s WHERE key = $1" name in
+                   Aux.exec_ db query [Key.encode key]
+               | None -> Lwt.return_unit))
+           >>= fun () -> Aux.exec_ db "COMMIT" [])
+        (fun e -> Aux.exec_ db "ROLLBACK" [] >>= fun () -> Lwt.fail e)
 
     let length () =
       with_table @@ fun db ->
