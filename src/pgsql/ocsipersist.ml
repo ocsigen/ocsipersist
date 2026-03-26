@@ -168,6 +168,7 @@ module Functorial = struct
     type key = Key.t
     type value = Value.t
 
+    let () = Ocsipersist_lib.validate_name T.name
     let name = T.name
 
     module Aux = struct
@@ -368,6 +369,7 @@ module Store = struct
   type 'a t = {store : string; name : string}
 
   let open_store store =
+    Ocsipersist_lib.validate_name store;
     use_pool @@ fun db ->
     let create_table db table =
       let query =

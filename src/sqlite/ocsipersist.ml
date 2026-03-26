@@ -134,6 +134,7 @@ module Store = struct
   type 'a t = store * string
 
   let open_store name =
+    Ocsipersist_lib.validate_name name;
     let s = "store___" ^ name in
     Aux.db_create s
 
@@ -188,6 +189,7 @@ module Functorial = struct
     type key = Key.t
     type value = Value.t
 
+    let () = Ocsipersist_lib.validate_name T.name
     let name = "store___" ^ T.name
 
     let init =
