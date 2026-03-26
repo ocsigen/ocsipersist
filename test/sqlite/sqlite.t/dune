@@ -1,3 +1,7 @@
 (executable
  (name test)
  (libraries ocsipersist ocsipersist-sqlite))
+
+(executable
+ (name test_functorial)
+ (libraries ocsipersist ocsipersist-sqlite))
