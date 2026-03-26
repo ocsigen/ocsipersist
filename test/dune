@@ -11,3 +11,10 @@
   (package ocsipersist-pgsql)
   (deps
    (package ocsipersist-pgsql))))
+
+(subdir
+ dbm
+ (cram
+  (package ocsipersist-dbm)
+  (deps
+   (package ocsipersist-dbm))))
