@@ -1,3 +1,7 @@
 (executable
  (name test)
  (libraries ocsipersist ocsipersist-dbm))
+
+(executable
+ (name test_multi)
+ (libraries ocsipersist ocsipersist-dbm lwt.unix))
