@@ -261,7 +261,9 @@ module Functorial = struct
     let length () =
       with_table @@ fun db ->
       let query = sprintf "SELECT count (1) FROM %s" name in
-      Lwt.map one_value @@ Aux.exec db query []
+      Aux.exec db query [] >>= function
+      | [Some n] :: _ -> Lwt.return (int_of_string n)
+      | _ -> Lwt.return 0
 
     let max_iter_block_size = 1000L
 
