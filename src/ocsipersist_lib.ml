@@ -75,7 +75,7 @@ module Sigs = struct
     end
 
     module Table
-        (T : sig
+        (_ : sig
            val name : string
          end)
         (Key : COLUMN)
@@ -221,6 +221,20 @@ end
 open Sigs
 open Lwt.Infix
 
+let is_valid_name_char = function
+  | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
+  | _ -> false
+
+let validate_name name =
+  if String.length name = 0
+  then invalid_arg "Ocsipersist: table/store name must not be empty"
+  else if not (String.for_all is_valid_name_char name)
+  then
+    invalid_arg
+      (Printf.sprintf
+         "Ocsipersist: invalid table/store name %S (only [a-zA-Z0-9_] allowed)"
+         name)
+
 (** deriving polymorphic interface from the functorial one *)
 module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
   module type POLYMORPHIC = TABLE with type key = string
@@ -228,6 +242,7 @@ module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
   type 'value table = (module POLYMORPHIC with type value = 'value)
 
   let open_table (type a) name =
+    validate_name name;
     let open Functorial in
     let module T =
       Table
