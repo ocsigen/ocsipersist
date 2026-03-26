@@ -124,23 +124,29 @@ module Sigs = struct
     val length : 'value table -> int Lwt.t
     (** Size of a table. *)
 
-    val iter_step : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
+    val iter : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
     (** Important warning: this iterator may not iter on all data of the table
         if another thread is modifying it in the same time. Nonetheless, it should
         not miss more than a very few data from time to time, except if the table
         is very old (at least 9 223 372 036 854 775 807 insertions).
     *)
 
-    val fold_step :
-       (string -> 'a -> 'b -> 'b Lwt.t)
-      -> 'a table
-      -> 'b
-      -> 'b Lwt.t
+    val fold : (string -> 'a -> 'b -> 'b Lwt.t) -> 'a table -> 'b -> 'b Lwt.t
     (** Important warning: this iterator may not iter on all data of the table
         if another thread is modifying it in the same time. Nonetheless, it should
         not miss more than a very few data from time to time, except if the table
         is very old (at least 9 223 372 036 854 775 807 insertions).
     *)
+
+    val iter_step : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
+    [@@alert deprecated "Use iter instead."]
+
+    val fold_step :
+       (string -> 'a -> 'b -> 'b Lwt.t)
+      -> 'a table
+      -> 'b
+      -> 'b Lwt.t
+    [@@alert deprecated "Use fold instead."]
 
     val iter_block : (string -> 'a -> unit) -> 'a table -> unit Lwt.t
     (** MAJOR WARNING: Unlike iter_step, this iterator won't miss any
@@ -267,12 +273,10 @@ module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
 
   let remove (type a) (module T : POLYMORPHIC with type value = a) = T.remove
   let length (type a) (module T : POLYMORPHIC with type value = a) = T.length ()
-
-  let iter_step (type a) f (module T : POLYMORPHIC with type value = a) =
-    T.iter f
-
-  let fold_step (type a) f (module T : POLYMORPHIC with type value = a) =
-    T.fold f
+  let iter (type a) f (module T : POLYMORPHIC with type value = a) = T.iter f
+  let fold (type a) f (module T : POLYMORPHIC with type value = a) = T.fold f
+  let iter_step = iter
+  let fold_step = fold
 
   let iter_block (type a) f (module T : POLYMORPHIC with type value = a) =
     T.iter_block f
