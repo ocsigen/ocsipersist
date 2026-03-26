@@ -139,7 +139,9 @@ module Store = struct
   type 'a t = store * string
   (** Type of persistent data *)
 
-  let open_store name = Lwt.return name
+  let open_store name =
+    Ocsipersist_lib.validate_name name;
+    Lwt.return name
 
   let make_persistent_lazy_lwt ~store ~name ~default =
     let pvname = store, name in
@@ -192,6 +194,7 @@ module Functorial = struct
     type key = Key.t
     type value = Value.t
 
+    let () = Ocsipersist_lib.validate_name T.name
     let name = T.name
     let find key = Lwt.map Value.decode @@ Db.get (name, Key.encode key)
     let add key value = Db.replace (name, Key.encode key) (Value.encode value)
