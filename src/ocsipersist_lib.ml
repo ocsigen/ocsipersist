@@ -88,6 +88,12 @@ module Sigs = struct
       module Marshal (C : sig
           type t
         end) : COLUMN with type t = C.t
+
+      module Json (C : sig
+          type t
+
+          val t : t Deriving_Json.t
+        end) : COLUMN with type t = C.t
     end
   end
 
@@ -222,6 +228,74 @@ module Sigs = struct
     val set : 'a t -> 'a -> unit Lwt.t
     (** [set pv value] sets a persistent value [pv] to [value] *)
   end
+
+  module type REF_JSON = sig
+    (** Type-safe persistent references using {!Deriving_Json} for
+        serialisation. *)
+
+    type 'a t
+    (** The type of (persistent or not) references *)
+
+    val ref : ?persistent:string -> 'a Deriving_Json.t -> 'a -> 'a t
+    (** [ref ?persistent json default] creates a reference.
+        If optional parameter [?persistent] is absent,
+        the reference will not be persistent (implemented using OCaml references).
+        Otherwise, the value of [persistent] will be used as key for the
+        value in the persistent reference table.
+        If the reference already exists, the current value is kept. *)
+
+    val get : 'a t -> 'a Lwt.t
+    (** Get the value of a reference *)
+
+    val set : 'a t -> 'a -> unit Lwt.t
+    (** Set the value of a reference *)
+  end
+
+  module type STORE_JSON = sig
+    type 'a t
+    (** Type of persistent data *)
+
+    type store
+    (** Data are divided into stores.
+        Create one store for your project, where you will save all your data. *)
+
+    val open_store : string -> store Lwt.t
+    (** Open a store (and create it if it does not exist)  *)
+
+    val make_persistent :
+       store:store
+      -> name:string
+      -> json:'a Deriving_Json.t
+      -> default:'a
+      -> 'a t Lwt.t
+    (** [make_persistent ~store ~name ~json ~default] find a persistent value
+        named [name] in store [store]
+        from database, or create it with the default value [default] if it
+        does not exist. Uses {!Deriving_Json} for type-safe serialisation. *)
+
+    val make_persistent_lazy :
+       store:store
+      -> name:string
+      -> json:'a Deriving_Json.t
+      -> default:(unit -> 'a)
+      -> 'a t Lwt.t
+    (** Same as make_persistent but the default value is evaluated only
+        if needed *)
+
+    val make_persistent_lazy_lwt :
+       store:store
+      -> name:string
+      -> json:'a Deriving_Json.t
+      -> default:(unit -> 'a Lwt.t)
+      -> 'a t Lwt.t
+    (** Lwt version of make_persistent_lazy. *)
+
+    val get : 'a t -> 'a Lwt.t
+    (** [get pv] gives the value of [pv] *)
+
+    val set : 'a t -> 'a -> unit Lwt.t
+    (** [set pv value] sets a persistent value [pv] to [value] *)
+  end
 end
 
 open Sigs
@@ -338,4 +412,82 @@ module Ref (Store : STORE) = struct
     | Per r ->
         let* r = r in
         Store.set r v
+end
+
+module Store_json (Functorial : FUNCTORIAL) : STORE_JSON = struct
+  type store = string
+  type 'a t = {find : unit -> 'a Lwt.t; add : 'a -> unit Lwt.t}
+
+  let open_store name =
+    validate_name name;
+    Lwt.return ("store_json___" ^ name)
+
+  let make_persistent_lazy_lwt
+        (type a)
+        ~store
+        ~name
+        ~(json : a Deriving_Json.t)
+        ~default
+    =
+    let open Functorial in
+    let module T =
+      Table
+        (struct
+          let name = store
+        end)
+        (Column.String)
+        (Column.Json (struct
+             type t = a
+
+             let t = json
+           end))
+    in
+    let find () = T.find name in
+    let add v = T.add name v in
+    Lwt.catch
+      (fun () -> find () >>= fun _ -> Lwt.return ())
+      (function
+        | Not_found -> default () >>= fun def -> add def | e -> Lwt.fail e)
+    >>= fun () -> Lwt.return {find; add}
+
+  let make_persistent_lazy ~store ~name ~json ~default =
+    let default () = Lwt.wrap default in
+    make_persistent_lazy_lwt ~store ~name ~json ~default
+
+  let make_persistent ~store ~name ~json ~default =
+    make_persistent_lazy ~store ~name ~json ~default:(fun () -> default)
+
+  let get t = t.find ()
+  let set t v = t.add v
+end
+
+module Ref_json (Functorial : FUNCTORIAL) : REF_JSON = struct
+  module S = Store_json (Functorial)
+
+  let store = lazy (S.open_store "__ocsipersist_ref_json_store__")
+
+  type 'a t = Ref of 'a ref | Per of 'a S.t Lwt.t
+
+  let ref (type a) ?persistent (json : a Deriving_Json.t) v =
+    match persistent with
+    | None -> Ref (ref v)
+    | Some name ->
+        Per
+          (let* store = Lazy.force store in
+           S.make_persistent ~store ~name ~json ~default:v)
+
+  let get = function
+    | Ref r -> Lwt.return !r
+    | Per r ->
+        let* r = r in
+        S.get r
+
+  let set r v =
+    match r with
+    | Ref r ->
+        r := v;
+        Lwt.return_unit
+    | Per r ->
+        let* r = r in
+        S.set r v
 end

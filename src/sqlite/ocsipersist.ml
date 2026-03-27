@@ -433,11 +433,28 @@ module Functorial = struct
         | Data.BLOB v -> Marshal.from_string v 0
         | _ -> assert false
     end
+
+    module Json (C : sig
+        type t
+
+        val t : t Deriving_Json.t
+      end) : COLUMN with type t = C.t = struct
+      type t = C.t
+
+      let column_type = "text"
+      let encode v = Data.TEXT (Deriving_Json.to_string C.t v)
+
+      let decode = function
+        | Data.TEXT s -> Deriving_Json.from_string C.t s
+        | _ -> assert false
+    end
   end
 end
 
 module Polymorphic = Ocsipersist_lib.Polymorphic (Functorial)
 module Ref = Ocsipersist_lib.Ref (Store)
+module Store_json = Ocsipersist_lib.Store_json (Functorial)
+module Ref_json = Ocsipersist_lib.Ref_json (Functorial)
 
 type 'value table = 'value Polymorphic.table
 

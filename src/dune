@@ -3,11 +3,11 @@
  (public_name ocsipersist-lib)
  (modules ocsipersist_lib)
  (wrapped false)
- (libraries lwt))
+ (libraries lwt js_of_ocaml.deriving))
 
 (library
  (name ocsipersist)
  (public_name ocsipersist)
  (virtual_modules ocsipersist)
  (modules ocsipersist)
- (libraries ocsipersist_lib lwt))
+ (libraries ocsipersist_lib lwt js_of_ocaml.deriving))

@@ -65,4 +65,16 @@ module Store : Ocsipersist_lib.Sigs.STORE
 type store = Store.store
 type 'a variable = 'a Store.t
 
+module Ref_json : Ocsipersist_lib.Sigs.REF_JSON
+(** Type-safe persistent references using {!Deriving_Json} for
+    serialisation. Unlike {!Ref}, this does not rely on {!Stdlib.Marshal}
+    and is safe across OCaml versions. Requires types annotated with
+    [\[@@deriving json\]]. *)
+
+module Store_json : Ocsipersist_lib.Sigs.STORE_JSON
+(** Type-safe variable store using {!Deriving_Json} for serialisation.
+    Unlike {!Store}, this does not rely on {!Stdlib.Marshal}
+    and is safe across OCaml versions. Requires types annotated with
+    [\[@@deriving json\]]. *)
+
 val init : unit -> unit
