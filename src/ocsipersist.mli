@@ -69,12 +69,17 @@ module Ref_json : Ocsipersist_lib.Sigs.REF_JSON
 (** Type-safe persistent references using {!Deriving_Json} for
     serialisation. Unlike {!Ref}, this does not rely on {!Stdlib.Marshal}
     and is safe across OCaml versions. Requires types annotated with
-    [\[@@deriving json\]]. *)
+    [\[@@deriving json\]] (from [js_of_ocaml-ppx_deriving_json]). *)
 
 module Store_json : Ocsipersist_lib.Sigs.STORE_JSON
 (** Type-safe variable store using {!Deriving_Json} for serialisation.
     Unlike {!Store}, this does not rely on {!Stdlib.Marshal}
     and is safe across OCaml versions. Requires types annotated with
-    [\[@@deriving json\]]. *)
+    [\[@@deriving json\]] (from [js_of_ocaml-ppx_deriving_json]).
+
+    Note: The dependency on [js_of_ocaml] is only for the {!Deriving_Json}
+    runtime library, which provides type-safe JSON serialisation. This is
+    the same serialisation mechanism used by Eliom for client-server
+    communication. No JavaScript compilation is involved. *)
 
 val init : unit -> unit
