@@ -367,6 +367,18 @@ module Functorial = struct
       let encode v = PGOCaml.string_of_bytea @@ Marshal.to_string v []
       let decode v = Marshal.from_string (PGOCaml.bytea_of_string v) 0
     end
+
+    module Json (C : sig
+        type t
+
+        val t : t Deriving_Json.t
+      end) : COLUMN with type t = C.t = struct
+      type t = C.t
+
+      let column_type = "text"
+      let encode v = escape_string (Deriving_Json.to_string C.t v)
+      let decode v = Deriving_Json.from_string C.t (unescape_string v)
+    end
   end
 end
 
@@ -429,6 +441,8 @@ module Store = struct
 end
 
 module Ref = Ocsipersist_lib.Ref (Store)
+module Store_json = Ocsipersist_lib.Store_json (Functorial)
+module Ref_json = Ocsipersist_lib.Ref_json (Functorial)
 
 type store = Store.store
 type 'a variable = 'a Store.t
