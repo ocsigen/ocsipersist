@@ -327,7 +327,9 @@ module Functorial = struct
         res := res';
         Lwt.return_unit
       in
-      iter ?count ?gt ?geq ?lt ?leq g >> Lwt.return !res
+      (* Read [res] only once [iter] has completed: [>>] would evaluate
+         [Lwt.return !res] eagerly and capture the initial accumulator. *)
+      iter ?count ?gt ?geq ?lt ?leq g >>= fun () -> Lwt.return !res
 
     let iter_block ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
       failwith "Ocsipersist.iter_block: not implemented"
