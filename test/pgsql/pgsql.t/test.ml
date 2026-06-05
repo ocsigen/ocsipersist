@@ -28,6 +28,20 @@ let main () =
   let* () = T.add "c" "3" in
   let* n = T.length () in
   Printf.printf "length after 3 adds: %d\n%!" n;
+  (* Regression test for issue #19: fold/iter must see the rows. *)
+  let* count = T.fold (fun _ _ acc -> Lwt.return (acc + 1)) 0 in
+  Printf.printf "fold count: %d\n%!" count;
+  let* concat =
+    T.fold (fun k v acc -> Lwt.return (acc ^ k ^ "=" ^ v ^ ";")) ""
+  in
+  Printf.printf "fold concat: %s\n%!" concat;
+  let keys = ref [] in
+  let* () =
+    T.iter (fun k _ ->
+      keys := k :: !keys;
+      Lwt.return_unit)
+  in
+  Printf.printf "iter keys: %s\n%!" (String.concat "," (List.rev !keys));
   let* () = T.remove "b" in
   let* n = T.length () in
   Printf.printf "length after remove: %d\n%!" n;

@@ -12,6 +12,9 @@ Run the test:
 
   $ dune exec -- ./test.exe
   length after 3 adds: 3
+  fold count: 3
+  fold concat: a=1;b=2;c=3;
+  iter keys: a,b,c
   length after remove: 2
 
 Tear down:
