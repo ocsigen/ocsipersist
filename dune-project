@@ -84,7 +84,8 @@
   (lwt (>= 4.2.0))
   logs
   ocsipersist
-  sqlite3))
+  sqlite3
+  (js_of_ocaml-ppx_deriving_json :with-test)))
 
 (package
  (name ocsipersist-sqlite-config)
