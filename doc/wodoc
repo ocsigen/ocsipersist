@@ -1,0 +1,28 @@
+;; Declarative wodoc config for the Ocsipersist documentation.
+;; Replaces this project's build.sh AND its hand-written nav (nav.html/leftnav.html):
+;;   wodoc build --config doc/wodoc --src <odoc _html> --out <dir>/<label> \
+;;               --label <v> --menu <shared menu.html> [--latest]
+(project ocsipersist)
+(title Ocsipersist)
+(pub /ocsipersist)
+(profile release)                       ; dune build @doc --profile release
+(landing ocsipersist/index.html)
+;; no (highlight …): Ocsipersist has no ppx, so wodoc's default starter is enough.
+(packages ocsipersist ocsipersist-lib ocsipersist-dbm ocsipersist-sqlite
+          ocsipersist-pgsql ocsipersist-dbm-config ocsipersist-sqlite-config
+          ocsipersist-pgsql-config)
+(nav
+  (section "Ocsipersist"
+    (link "Overview"                 ocsipersist/index.html                            ocsipersist)
+    (link "Ocsipersist (frontend)"   ocsipersist/Ocsipersist/index.html                ocsipersist)
+    (link "Ocsipersist_lib (signatures)" ocsipersist-lib/Ocsipersist_lib/index.html    ocsipersist-lib))
+  (section "Backends"
+    (link "SQLite"     ocsipersist-sqlite/index.html  ocsipersist-sqlite)
+    (link "DBM"        ocsipersist-dbm/index.html     ocsipersist-dbm)
+    (link "PostgreSQL" ocsipersist-pgsql/index.html   ocsipersist-pgsql))
+  (section "Server config"
+    (link "SQLite config"     ocsipersist-sqlite-config/Ocsipersist_config/index.html ocsipersist-sqlite-config)
+    (link "DBM config"        ocsipersist-dbm-config/Ocsipersist_config/index.html    ocsipersist-dbm-config)
+    (link "PostgreSQL config" ocsipersist-pgsql-config/Ocsipersist_config/index.html  ocsipersist-pgsql-config))
+  (api-section "API"
+    (link "Ppx" Ppx/index.html Ppx)))
