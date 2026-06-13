@@ -23,6 +23,4 @@
   (section "Server config"
     (link "SQLite config"     ocsipersist-sqlite-config/Ocsipersist_config/index.html ocsipersist-sqlite-config)
     (link "DBM config"        ocsipersist-dbm-config/Ocsipersist_config/index.html    ocsipersist-dbm-config)
-    (link "PostgreSQL config" ocsipersist-pgsql-config/Ocsipersist_config/index.html  ocsipersist-pgsql-config))
-  (api-section "API"
-    (link "Ppx" Ppx/index.html Ppx)))
+    (link "PostgreSQL config" ocsipersist-pgsql-config/Ocsipersist_config/index.html  ocsipersist-pgsql-config)))
