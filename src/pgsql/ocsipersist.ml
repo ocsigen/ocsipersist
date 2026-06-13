@@ -54,14 +54,14 @@ let use_pool f =
   Lwt.catch
     (fun () -> f db)
     (function
-       | PGOCaml.Error msg as e ->
-           Logs.err ~src:section (fun fmt ->
-             fmt "postgresql protocol error: %s" msg);
-           PGOCaml.close db >>= fun () -> Lwt.fail e
-       | Lwt.Canceled as e ->
-           Logs.err ~src:section (fun fmt -> fmt "thread canceled");
-           PGOCaml.close db >>= fun () -> Lwt.fail e
-       | e -> Lwt.fail e)
+      | PGOCaml.Error msg as e ->
+          Logs.err ~src:section (fun fmt ->
+            fmt "postgresql protocol error: %s" msg);
+          PGOCaml.close db >>= fun () -> Lwt.fail e
+      | Lwt.Canceled as e ->
+          Logs.err ~src:section (fun fmt -> fmt "thread canceled");
+          PGOCaml.close db >>= fun () -> Lwt.fail e
+      | e -> Lwt.fail e)
 
 (* escapes characters that are not in the range of 0x20..0x7e;
    this is to meet PostgreSQL's format requirements for text fields
@@ -94,10 +94,11 @@ let unescape_string str =
       incr i;
       if !i < len && str.[!i] = '\\'
       then (Buffer.add_char buf '\\'; incr i)
-      else if !i + 2 < len
-              && is_first_oct_digit str.[!i]
-              && is_oct_digit str.[!i + 1]
-              && is_oct_digit str.[!i + 2]
+      else if
+        !i + 2 < len
+        && is_first_oct_digit str.[!i]
+        && is_oct_digit str.[!i + 1]
+        && is_oct_digit str.[!i + 2]
       then (
         let byte = oct_val str.[!i] in
         incr i;
@@ -167,6 +168,7 @@ module Functorial = struct
     type key = Key.t
     type value = Value.t
 
+    let () = Ocsipersist_lib.validate_name T.name
     let name = T.name
 
     module Aux = struct
@@ -218,7 +220,7 @@ module Functorial = struct
         sprintf "UPDATE %s SET value = $2 WHERE key = $1 RETURNING 0" name
       in
       Aux.exec db query (Aux.encode_pair key value) >>= function
-      | [] -> raise Not_found
+      | [] -> Lwt.fail Not_found
       | _ -> Lwt.return_unit
 
     let remove key =
@@ -228,30 +230,40 @@ module Functorial = struct
 
     let modify_opt key f =
       with_table @@ fun db ->
-      let query = sprintf "SELECT value FROM %s WHERE key = $1" name in
-      Aux.exec db query [Key.encode key] >>= fun value ->
-      let old_value =
-        match value with [Some v] :: _ -> Some (Value.decode v) | _ -> None
-      in
-      let new_value = f old_value in
-      match new_value = old_value, new_value with
-      | true, _ -> Lwt.return_unit
-      | false, Some new_value ->
-          let query =
-            sprintf
-              "INSERT INTO %s VALUES ($1, $2)
-                               ON CONFLICT (key) DO UPDATE SET value = $2"
-              name
-          in
-          Aux.exec_ db query @@ Aux.encode_pair key new_value
-      | false, None ->
-          let query = sprintf "DELETE FROM %s WHERE key = $1" name in
-          Aux.exec_ db query [Key.encode key]
+      Aux.exec_ db "BEGIN" [] >>= fun () ->
+      Lwt.catch
+        (fun () ->
+           let query = sprintf "SELECT value FROM %s WHERE key = $1" name in
+           Aux.exec db query [Key.encode key] >>= fun value ->
+           let old_value =
+             match value with
+             | [Some v] :: _ -> Some (Value.decode v)
+             | _ -> None
+           in
+           (match f old_value with
+             | Some new_value ->
+                 let query =
+                   sprintf
+                     "INSERT INTO %s VALUES ($1, $2)
+                     ON CONFLICT (key) DO UPDATE SET value = $2"
+                     name
+                 in
+                 Aux.exec_ db query @@ Aux.encode_pair key new_value
+             | None -> (
+               match old_value with
+               | Some _ ->
+                   let query = sprintf "DELETE FROM %s WHERE key = $1" name in
+                   Aux.exec_ db query [Key.encode key]
+               | None -> Lwt.return_unit))
+           >>= fun () -> Aux.exec_ db "COMMIT" [])
+        (fun e -> Aux.exec_ db "ROLLBACK" [] >>= fun () -> Lwt.fail e)
 
     let length () =
       with_table @@ fun db ->
       let query = sprintf "SELECT count (1) FROM %s" name in
-      Lwt.map one_value @@ Aux.exec db query []
+      Aux.exec db query [] >>= function
+      | [Some n] :: _ -> Lwt.return (int_of_string n)
+      | _ -> Lwt.return 0
 
     let max_iter_block_size = 1000L
 
@@ -315,7 +327,9 @@ module Functorial = struct
         res := res';
         Lwt.return_unit
       in
-      iter ?count ?gt ?geq ?lt ?leq g >> Lwt.return !res
+      (* Read [res] only once [iter] has completed: [>>] would evaluate
+         [Lwt.return !res] eagerly and capture the initial accumulator. *)
+      iter ?count ?gt ?geq ?lt ?leq g >>= fun () -> Lwt.return !res
 
     let iter_block ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
       failwith "Ocsipersist.iter_block: not implemented"
@@ -355,6 +369,18 @@ module Functorial = struct
       let encode v = PGOCaml.string_of_bytea @@ Marshal.to_string v []
       let decode v = Marshal.from_string (PGOCaml.bytea_of_string v) 0
     end
+
+    module Json (C : sig
+        type t
+
+        val t : t Deriving_Json.t
+      end) : COLUMN with type t = C.t = struct
+      type t = C.t
+
+      let column_type = "text"
+      let encode v = escape_string (Deriving_Json.to_string C.t v)
+      let decode v = Deriving_Json.from_string C.t (unescape_string v)
+    end
   end
 end
 
@@ -367,6 +393,7 @@ module Store = struct
   type 'a t = {store : string; name : string}
 
   let open_store store =
+    Ocsipersist_lib.validate_name store;
     use_pool @@ fun db ->
     let create_table db table =
       let query =
@@ -416,6 +443,8 @@ module Store = struct
 end
 
 module Ref = Ocsipersist_lib.Ref (Store)
+module Store_json = Ocsipersist_lib.Store_json (Functorial)
+module Ref_json = Ocsipersist_lib.Ref_json (Functorial)
 
 type store = Store.store
 type 'a variable = 'a Store.t

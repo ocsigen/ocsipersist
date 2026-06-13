@@ -25,9 +25,6 @@ open Ocsidbmtypes
 open Lwt.Infix
 
 let directory = Sys.argv.(1)
-
-exception Ocsidbm_error
-
 let socketname = "socket"
 let suffix = ".otbl"
 
@@ -53,27 +50,6 @@ module Tableoftables = Map.Make (struct
   end)
 
 let tableoftables = ref Tableoftables.empty
-
-let list_tables () =
-  let d =
-    try Unix.opendir directory
-    with Unix.Unix_error (error, _, _) ->
-      failwith
-        (Printf.sprintf "Ocsidbm: can't open directory  %s: %s" directory
-           (Unix.error_message error))
-  in
-  let rec aux () =
-    try
-      let n = Unix.readdir d in
-      if Filename.check_suffix n suffix
-      then Filename.chop_extension n :: aux ()
-      else if Filename.check_suffix n (suffix ^ ".pag")
-              (* depending on the version of dbm, there may be a .pag suffix *)
-      then Filename.chop_extension (Filename.chop_extension n) :: aux ()
-      else aux ()
-    with End_of_file -> Unix.closedir d; []
-  in
-  aux ()
 
 (* try to create the directory if it does not exist *)
 let () =
@@ -110,9 +86,9 @@ let open_db_if_exists name =
    try ignore (open_db a)
    with ... -> errlog ("Error while openning database "^a))
     (list_tables ())
-si je remets ça, ça doit être après la création de la socket
-car si je n'arrive pas à créer la socket,
-c'est peut-être que les tables sont déjà ouvertes
+si je remets ï¿½a, ï¿½a doit ï¿½tre aprï¿½s la crï¿½ation de la socket
+car si je n'arrive pas ï¿½ crï¿½er la socket,
+c'est peut-ï¿½tre que les tables sont dï¿½jï¿½ ouvertes
 *)
 
 let find_create_table name =
@@ -216,7 +192,7 @@ let execute outch =
              db_length t >>= fun i ->
              send outch (Value (Marshal.to_string i [])))
           (function
-             | Not_found -> send outch Dbm_not_found | e -> send outch (Error e)))
+            | Not_found -> send outch Dbm_not_found | e -> send outch (Error e)))
 
 let nb_clients = ref 0
 

@@ -16,7 +16,8 @@
  (maintenance_intent "(latest)")
  (depends
   (ocsipersist-lib (= :version))
-  (lwt (>= 4.2.0)))
+  (lwt (>= 4.2.0))
+  (js_of_ocaml (>= 6.0.0)))
  (conflicts
   (ocsipersist-dbm (<> :version))
   (ocsipersist-pgsql (<> :version))
@@ -49,7 +50,8 @@
  (description "This library defines signatures and auxiliary tools for defining backends for the Ocsipersist frontent. Ocsipersist is used pervasively in Eliom/Ocsigen to handle sessions and references. It can be used as an extension for ocsigenserver or as a library. Implementations of the following backends currently exist: DBM, PostgreSQL, SQLite.")
  (maintenance_intent "(latest)")
  (depends
-  (lwt (>= 4.2.0))))
+  (lwt (>= 4.2.0))
+  (js_of_ocaml (>= 6.0.0))))
 
 (package
  (name ocsipersist-pgsql)
@@ -82,7 +84,8 @@
   (lwt (>= 4.2.0))
   logs
   ocsipersist
-  sqlite3))
+  sqlite3
+  (js_of_ocaml-ppx_deriving_json :with-test)))
 
 (package
  (name ocsipersist-sqlite-config)

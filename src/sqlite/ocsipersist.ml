@@ -27,17 +27,36 @@ module Aux = struct
     then Logs.err ~src:section (fun fmt -> fmt "Couldn't close database")
 
   let m = Mutex.create ()
+  let db_conn : Sqlite3.db option ref = ref None
+  let db_conn_file = ref ""
+
+  let get_db () =
+    match !db_conn with
+    | Some db when !db_conn_file = !db_file -> db
+    | Some db ->
+        close_safely db;
+        let db = db_open !db_file in
+        db_conn := Some db;
+        db_conn_file := !db_file;
+        db
+    | None ->
+        let db = db_open !db_file in
+        db_conn := Some db;
+        db_conn_file := !db_file;
+        db
+
+  let () =
+    at_exit (fun () ->
+      match !db_conn with Some db -> close_safely db | None -> ())
 
   let exec_safely f =
     let aux () =
-      let db =
-        Mutex.lock m;
-        try db_open !db_file with e -> Mutex.unlock m; raise e
-      in
+      Mutex.lock m;
       try
+        let db = get_db () in
         let r = f db in
-        close_safely db; Mutex.unlock m; r
-      with e -> close_safely db; Mutex.unlock m; raise e
+        Mutex.unlock m; r
+      with e -> Mutex.unlock m; raise e
     in
     Lwt_preemptive.detach aux ()
 
@@ -46,47 +65,52 @@ module Aux = struct
    * Langage compris par SQLite : http://www.sqlite.org/lang.html
    *)
 
+  (* Step a statement until DONE, retrying on BUSY/LOCKED. *)
+  let step_until_done stmt =
+    let rec aux () =
+      match step stmt with
+      | Rc.DONE -> ignore (finalize stmt : Rc.t)
+      | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
+      | rc ->
+          ignore (finalize stmt : Rc.t);
+          failwith (Rc.to_string rc)
+    in
+    aux ()
+
+  (* Step a statement expecting one ROW, extract a value from it.
+     Raises Not_found if the query returns no rows. *)
+  let step_one_row stmt f =
+    let rec aux () =
+      match step stmt with
+      | Rc.ROW ->
+          let r = f stmt in
+          ignore (finalize stmt : Rc.t);
+          r
+      | Rc.DONE ->
+          ignore (finalize stmt : Rc.t);
+          raise Not_found
+      | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
+      | rc ->
+          ignore (finalize stmt : Rc.t);
+          failwith (Rc.to_string rc)
+    in
+    aux ()
+
   let db_create table =
     let sql =
       sprintf
         "CREATE TABLE IF NOT EXISTS %s (key TEXT, value BLOB,  PRIMARY KEY(key) ON CONFLICT REPLACE)"
         table
     in
-    let create db =
-      let stmt = prepare db sql in
-      let rec aux () =
-        match step stmt with
-        | Rc.DONE -> ignore (finalize stmt : Rc.t)
-        | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
-        | rc ->
-            ignore (finalize stmt : Rc.t);
-            failwith (Rc.to_string rc)
-      in
-      aux ()
-    in
-    exec_safely create >>= fun () -> Lwt.return table
+    exec_safely (fun db -> step_until_done (prepare db sql)) >>= fun () ->
+    Lwt.return table
 
   let db_get, db_replace =
     let get (table, key) db =
       let sqlget = sprintf "SELECT value FROM %s WHERE key = :key " table in
       let stmt = bind_safely (prepare db sqlget) [Data.TEXT key, ":key"] in
-      let rec aux () =
-        match step stmt with
-        | Rc.ROW ->
-            let value =
-              match column stmt 0 with Data.BLOB s -> s | _ -> assert false
-            in
-            ignore (finalize stmt : Rc.t);
-            value
-        | Rc.DONE ->
-            ignore (finalize stmt : Rc.t);
-            raise Not_found
-        | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
-        | rc ->
-            ignore (finalize stmt : Rc.t);
-            failwith (Rc.to_string rc)
-      in
-      aux ()
+      step_one_row stmt (fun stmt ->
+        match column stmt 0 with Data.BLOB s -> s | _ -> assert false)
     in
     let replace (table, key) value db =
       let sqlreplace =
@@ -96,15 +120,7 @@ module Aux = struct
         bind_safely (prepare db sqlreplace)
           [Data.TEXT key, ":key"; Data.BLOB value, ":value"]
       in
-      let rec aux () =
-        match step stmt with
-        | Rc.DONE -> ignore (finalize stmt : Rc.t)
-        | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
-        | rc ->
-            ignore (finalize stmt : Rc.t);
-            failwith (Rc.to_string rc)
-      in
-      aux ()
+      step_until_done stmt
     in
     ( (fun tablekey -> exec_safely (get tablekey))
     , fun tablekey value -> exec_safely (replace tablekey value) )
@@ -115,6 +131,7 @@ module Store = struct
   type 'a t = store * string
 
   let open_store name =
+    Ocsipersist_lib.validate_name name;
     let s = "store___" ^ name in
     Aux.db_create s
 
@@ -123,10 +140,10 @@ module Store = struct
     Lwt.catch
       (fun () -> Aux.db_get pvname >>= fun _ -> Lwt.return ())
       (function
-         | Not_found ->
-             default () >>= fun def ->
-             Aux.db_replace pvname (Marshal.to_string def [])
-         | e -> Lwt.fail e)
+        | Not_found ->
+            default () >>= fun def ->
+            Aux.db_replace pvname (Marshal.to_string def [])
+        | e -> Lwt.fail e)
     >>= fun () -> Lwt.return pvname
 
   let make_persistent_lazy ~store ~name ~default =
@@ -169,6 +186,7 @@ module Functorial = struct
     type key = Key.t
     type value = Value.t
 
+    let () = Ocsipersist_lib.validate_name T.name
     let name = "store___" ^ T.name
 
     let init =
@@ -179,16 +197,7 @@ module Functorial = struct
              (key %s, value %s, PRIMARY KEY (key) ON CONFLICT REPLACE)"
             name Key.column_type Value.column_type
         in
-        let stmt = prepare db sql in
-        let rec aux () =
-          match step stmt with
-          | Rc.DONE -> ignore (finalize stmt : Rc.t)
-          | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
-          | rc ->
-              ignore (finalize stmt : Rc.t);
-              failwith (Rc.to_string rc)
-        in
-        aux ()
+        Aux.step_until_done (prepare db sql)
       in
       lazy (Aux.exec_safely create)
 
@@ -197,21 +206,7 @@ module Functorial = struct
     let db_get key db =
       let sqlget = sprintf "SELECT value FROM %s WHERE key = :key" name in
       let stmt = Aux.bind_safely (prepare db sqlget) [Key.encode key, ":key"] in
-      let rec aux () =
-        match step stmt with
-        | Rc.ROW ->
-            let value = column stmt 0 in
-            ignore (finalize stmt : Rc.t);
-            value
-        | Rc.DONE ->
-            ignore (finalize stmt : Rc.t);
-            raise Not_found
-        | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
-        | rc ->
-            ignore (finalize stmt : Rc.t);
-            failwith (Rc.to_string rc)
-      in
-      Value.decode @@ aux ()
+      Value.decode @@ Aux.step_one_row stmt (fun stmt -> column stmt 0)
 
     let db_replace key value db =
       let sqlreplace = sprintf "INSERT INTO %s VALUES (:key, :value)" name in
@@ -219,51 +214,19 @@ module Functorial = struct
         Aux.bind_safely (prepare db sqlreplace)
           [Key.encode key, ":key"; Value.encode value, ":value"]
       in
-      let rec aux () =
-        match step stmt with
-        | Rc.DONE -> ignore (finalize stmt : Rc.t)
-        | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
-        | rc ->
-            ignore (finalize stmt : Rc.t);
-            failwith (Rc.to_string rc)
-      in
-      aux ()
+      Aux.step_until_done stmt
 
     let db_remove key db =
       let sql = sprintf "DELETE FROM %s WHERE key = :key " name in
       let stmt = Aux.bind_safely (prepare db sql) [Key.encode key, ":key"] in
-      let rec aux () =
-        match step stmt with
-        | Rc.DONE -> ignore (finalize stmt : Rc.t)
-        | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
-        | rc ->
-            ignore (finalize stmt : Rc.t);
-            failwith (Rc.to_string rc)
-      in
-      aux ()
+      Aux.step_until_done stmt
 
     let db_length table db =
       let sql = sprintf "SELECT count (1) FROM %s " table in
-      let stmt = prepare db sql in
-      let rec aux () =
-        match step stmt with
-        | Rc.ROW ->
-            let value =
-              match column stmt 0 with
-              | Data.INT s -> Int64.to_int s
-              | _ -> assert false
-            in
-            ignore (finalize stmt : Rc.t);
-            value
-        | Rc.DONE ->
-            ignore (finalize stmt : Rc.t);
-            raise Not_found
-        | Rc.BUSY | Rc.LOCKED -> Aux.yield (); aux ()
-        | rc ->
-            ignore (finalize stmt : Rc.t);
-            failwith (Rc.to_string rc)
-      in
-      aux ()
+      Aux.step_one_row (prepare db sql) (fun stmt ->
+        match column stmt 0 with
+        | Data.INT s -> Int64.to_int s
+        | _ -> assert false)
 
     let db_iter ?gt ?geq ?lt ?leq table rowid db =
       let sql =
@@ -344,8 +307,45 @@ module Functorial = struct
     let iter ?count ?gt ?geq ?lt ?leq f =
       fold ?count ?gt ?geq ?lt ?leq (fun k v () -> f k v) ()
 
-    let iter_batch ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
-      failwith "Ocsipersist.iter_batch not implemented for SQLite"
+    let max_batch_size = 1000L
+
+    let iter_batch ?count ?gt ?geq ?lt ?leq f =
+      let rec aux rowid remaining =
+        match remaining with
+        | Some c when c <= 0L -> Lwt.return_unit
+        | _ ->
+            let limit =
+              match remaining with
+              | Some c when c <= max_batch_size -> c
+              | _ -> max_batch_size
+            in
+            let batch = ref [] in
+            let n = ref 0L in
+            let last_rowid = ref rowid in
+            with_table (fun db ->
+              let rec collect () =
+                if !n >= limit
+                then ()
+                else
+                  match db_iter ?gt ?geq ?lt ?leq name !last_rowid db with
+                  | None -> ()
+                  | Some (k, v, rowid') ->
+                      batch := (Key.decode k, Value.decode v) :: !batch;
+                      last_rowid := rowid';
+                      n := Int64.succ !n;
+                      collect ()
+              in
+              collect ())
+            >>= fun () ->
+            let items = List.rev !batch in
+            if items = []
+            then Lwt.return_unit
+            else
+              f items >>= fun () ->
+              let remaining = Option.map (fun c -> Int64.sub c !n) remaining in
+              aux !last_rowid remaining
+      in
+      aux Int64.zero count
 
     let iter_block ?count ?gt ?geq ?lt ?leq f =
       let sql =
@@ -433,11 +433,28 @@ module Functorial = struct
         | Data.BLOB v -> Marshal.from_string v 0
         | _ -> assert false
     end
+
+    module Json (C : sig
+        type t
+
+        val t : t Deriving_Json.t
+      end) : COLUMN with type t = C.t = struct
+      type t = C.t
+
+      let column_type = "text"
+      let encode v = Data.TEXT (Deriving_Json.to_string C.t v)
+
+      let decode = function
+        | Data.TEXT s -> Deriving_Json.from_string C.t s
+        | _ -> assert false
+    end
   end
 end
 
 module Polymorphic = Ocsipersist_lib.Polymorphic (Functorial)
 module Ref = Ocsipersist_lib.Ref (Store)
+module Store_json = Ocsipersist_lib.Store_json (Functorial)
+module Ref_json = Ocsipersist_lib.Ref_json (Functorial)
 
 type 'value table = 'value Polymorphic.table
 

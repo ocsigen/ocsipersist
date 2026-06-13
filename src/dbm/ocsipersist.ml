@@ -13,11 +13,21 @@ let socketname = "socket"
 
 module Config = Ocsipersist_settings
 
-module Aux = struct
-  external sys_exit : int -> 'a = "caml_sys_exit"
-end
-
 module Db = struct
+  let launch_ocsidbm () =
+    let param = [|!Config.ocsidbm; !Config.directory|] in
+    let log =
+      Unix.openfile !Config.error_log_path
+        [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND]
+        0o640
+    in
+    let devnull = Unix.openfile "/dev/null" [Unix.O_RDWR] 0 in
+    let pid = Unix.create_process !Config.ocsidbm param devnull devnull log in
+    Unix.close log;
+    Unix.close devnull;
+    (* ocsidbm detaches itself via setsid; we just need to reap the child *)
+    ignore (Unix.waitpid [Unix.WNOHANG] pid : int * Unix.process_status)
+
   let try_connect sname =
     Lwt.catch
       (fun () ->
@@ -28,34 +38,11 @@ module Db = struct
          Logs.warn ~src:section (fun fmt ->
            fmt "Launching a new Ocsidbm process: %s on directory %s."
              !Config.ocsidbm !Config.directory);
-         let param = [|!Config.ocsidbm; !Config.directory|] in
-         let child () =
-           let log =
-             Unix.openfile !Config.error_log_path
-               [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND]
-               0o640
-           in
-           Unix.dup2 log Unix.stderr;
-           Unix.close log;
-           let devnull = Unix.openfile "/dev/null" [Unix.O_WRONLY] 0 in
-           Unix.dup2 devnull Unix.stdout;
-           Unix.close devnull;
-           Unix.close Unix.stdin;
-           Unix.execvp !Config.ocsidbm param
-         in
-         let pid = Lwt_unix.fork () in
-         if pid = 0
-         then
-           if (* double fork *)
-              Lwt_unix.fork () = 0
-           then child ()
-           else Aux.sys_exit 0
-         else
-           Lwt_unix.waitpid [] pid >>= fun _ ->
-           Lwt_unix.sleep 1.1 >>= fun () ->
-           let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
-           Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
-           Lwt.return socket)
+         launch_ocsidbm ();
+         Lwt_unix.sleep 1.1 >>= fun () ->
+         let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
+         Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
+         Lwt.return socket)
 
   let rec get_indescr i =
     Lwt.catch
@@ -138,17 +125,19 @@ module Store = struct
   type 'a t = store * string
   (** Type of persistent data *)
 
-  let open_store name = Lwt.return name
+  let open_store name =
+    Ocsipersist_lib.validate_name name;
+    Lwt.return name
 
   let make_persistent_lazy_lwt ~store ~name ~default =
     let pvname = store, name in
     Lwt.catch
       (fun () -> Db.get pvname >>= fun _ -> Lwt.return ())
       (function
-         | Not_found ->
-             default () >>= fun def ->
-             Db.replace pvname (Marshal.to_string def [])
-         | e -> Lwt.fail e)
+        | Not_found ->
+            default () >>= fun def ->
+            Db.replace pvname (Marshal.to_string def [])
+        | e -> Lwt.fail e)
     >>= fun () -> Lwt.return pvname
 
   let make_persistent_lazy ~store ~name ~default =
@@ -191,6 +180,7 @@ module Functorial = struct
     type key = Key.t
     type value = Value.t
 
+    let () = Ocsipersist_lib.validate_name T.name
     let name = T.name
     let find key = Lwt.map Value.decode @@ Db.get (name, Key.encode key)
     let add key value = Db.replace (name, Key.encode key) (Value.encode value)
@@ -224,8 +214,26 @@ module Functorial = struct
     let iter ?count ?gt ?geq ?lt ?leq f =
       fold ?count ?gt ?geq ?lt ?leq (fun k v () -> f k v) ()
 
-    let iter_batch ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
-      failwith "Ocsipersist.iter_batch not implemented for DBM"
+    let max_batch_size = 1000L
+
+    let iter_batch ?count ?gt ?geq ?lt ?leq f =
+      let batch = ref [] in
+      let n = ref 0L in
+      let flush () =
+        match List.rev !batch with
+        | [] -> Lwt.return_unit
+        | items ->
+            batch := [];
+            n := 0L;
+            f items
+      in
+      fold ?count ?gt ?geq ?lt ?leq
+        (fun k v () ->
+           batch := (k, v) :: !batch;
+           n := Int64.succ !n;
+           if !n >= max_batch_size then flush () else Lwt.return_unit)
+        ()
+      >>= fun () -> flush ()
 
     let iter_block ?count:_ ?gt:_ ?geq:_ ?lt:_ ?leq:_ _ =
       failwith
@@ -279,11 +287,25 @@ module Functorial = struct
       let encode v = Marshal.to_string v []
       let decode v = Marshal.from_string v 0
     end
+
+    module Json (C : sig
+        type t
+
+        val t : t Deriving_Json.t
+      end) : COLUMN with type t = C.t = struct
+      type t = C.t
+
+      let column_type = "_"
+      let encode v = Deriving_Json.to_string C.t v
+      let decode v = Deriving_Json.from_string C.t v
+    end
   end
 end
 
 module Polymorphic = Ocsipersist_lib.Polymorphic (Functorial)
 module Ref = Ocsipersist_lib.Ref (Store)
+module Store_json = Ocsipersist_lib.Store_json (Functorial)
+module Ref_json = Ocsipersist_lib.Ref_json (Functorial)
 
 type 'value table = 'value Polymorphic.table
 
