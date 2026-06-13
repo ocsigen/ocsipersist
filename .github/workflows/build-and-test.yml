@@ -1,0 +1,46 @@
+name: Build and test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions: read-all
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} / OCaml ${{ matrix.ocaml-compiler }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - "4.14"
+          - "5"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: Install dependencies
+        run: opam install . --deps-only --with-test
+
+      - name: Build
+        run: opam exec -- dune build @check
+
+      # The PostgreSQL backend test spins up an ephemeral local cluster using
+      # the binaries reported by "pg_config --bindir". PostgreSQL is
+      # preinstalled on GitHub-hosted Ubuntu runners and pg_config is already
+      # on the PATH, so no extra installation step is required.
+      - name: Run tests
+        run: opam exec -- dune runtest
