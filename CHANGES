@@ -1,0 +1,35 @@
+## 2.1.0 (2026-06-13)
+
+New features:
+* Type-safe JSON serialisation via `Deriving_Json`: new modules `Store_json`,
+  `Ref_json` and functor `Column.Json`, available in all backends as
+  alternatives to the `Marshal`-based `Store`, `Ref` and `Column.Marshal`.
+  Persisted data is human-readable and stable across OCaml versions. This adds
+  a dependency on `js_of_ocaml` (for the `Deriving_Json` runtime only; no
+  JavaScript compilation is involved).
+* `iter` and `fold` added to the `Polymorphic` interface; `iter_step` and
+  `fold_step` are now deprecated.
+* `iter_batch` implemented for the SQLite and DBM backends (was raising at
+  runtime).
+
+Bug fixes:
+* SQLite: keep a persistent database connection instead of opening and closing
+  it on every operation.
+* PostgreSQL: fix `replace_if_exists` (`raise` instead of `Lwt.fail`), wrap
+  `modify_opt` in a transaction, fix `Functorial.length` (was using `Marshal`
+  on a `count` result) and fix `Functorial.fold`/`Polymorphic.fold` returning
+  the initial accumulator.
+* DBM: replace the `Lwt_unix.fork` double-fork with `Unix.create_process`,
+  compatible with OCaml 5 multicore domains.
+
+Security:
+* Validate table and store names (only `[a-zA-Z0-9_]` allowed) in all backends
+  to prevent SQL injection through interpolated names.
+
+Other:
+* Add a test suite for the three backends (SQLite, PostgreSQL, DBM) and a CI
+  workflow running it.
+
+## 2.0.0 (2024-06-15)
+
+See the git history for changes up to this release.
