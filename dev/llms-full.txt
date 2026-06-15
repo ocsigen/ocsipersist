@@ -1,0 +1,2990 @@
+# Ocsipersist
+
+> Ocsipersist is a collection of libraries defining a unified frontend for a number of key/value storage implementations. It is used pervasively in Ocsigen/Eliom to handle sessions and persistent references, but can be used as a standalone library or as an extension for Ocsigen Server.
+
+
+---
+
+# Ocsipersist
+
+Ocsipersist is a collection of libraries defining a unified frontend for a number of key/value storage implementations. It is used pervasively in Ocsigen/Eliom to handle sessions and persistent references, but can be used as a standalone library or as an extension for Ocsigen Server.
+
+Three backends currently exist:
+
+- [SQLite](../ocsipersist-sqlite/index.html)
+- [DBM](../ocsipersist-dbm/index.html)
+- [PostgreSQL](../ocsipersist-pgsql/index.html)
+You choose a backend by installing the corresponding package (`ocsipersist-sqlite`, `ocsipersist-dbm` or `ocsipersist-pgsql`); the unified frontend is the same in every case.
+
+
+## API reference
+
+The storage frontend is documented in module [`Ocsipersist`](./Ocsipersist.md). It defines several interfaces:
+
+- `Ref` — the simplest to use: persistent references;
+- `Store` — a lower-level interface for persistent values;
+- `Polymorphic` — a polymorphic table (using `Marshal`);
+- `Functorial` — a type-safe table built from a value description.
+See [`Ocsipersist`](./Ocsipersist.md) for the full frontend, and [`Ocsipersist_lib`](./../ocsipersist-lib/Ocsipersist_lib.md) for the backend-independent signatures and functors shared by every backend.
+
+
+## Backends and configuration
+
+Each backend ships an `Ocsipersist_settings` library to configure storage from OCaml, and an optional `ocsipersist-*-config` package to configure it from Ocsigen Server's configuration file:
+
+- SQLite: [usage](../ocsipersist-sqlite/index.html) · [server config](../ocsipersist-sqlite-config/Ocsipersist_config/index.html)
+- DBM: [usage](../ocsipersist-dbm/index.html) · [server config](../ocsipersist-dbm-config/Ocsipersist_config/index.html)
+- PostgreSQL: [usage](../ocsipersist-pgsql/index.html) · [server config](../ocsipersist-pgsql-config/Ocsipersist_config/index.html)
+
+
+---
+
+# ocsipersist-sqlite
+
+SQLite backend for Ocsipersist. For the API documentation see OPAM package [ocsipersist](../ocsipersist/Ocsipersist/index.html). This page describes how to configure the SQLite backend.
+
+
+## Using as a library
+
+If you are not using Ocsigen Server's configuration file, add library `ocsipersist-sqlite.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file.
+
+
+## Using with Ocsigen Server: ocsipersist-sqlite-config
+
+If you want to configure Ocsipersist-sqlite from Ocsigen Server's configuration file, use package [ocsipersist-sqlite-config](../ocsipersist-sqlite-config/Ocsipersist_config/index.html).
+
+
+---
+
+# ocsipersist-dbm
+
+DBM backend for Ocsipersist. For the API documentation see OPAM package [ocsipersist](../ocsipersist/Ocsipersist/index.html). This page describes how to configure the DBM backend. The DBM backend uses a server process `ocsidbm`.
+
+
+## Using as a library
+
+If you are not using Ocsigen Server's configuration file, add library `ocsipersist-dbm.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file.
+
+
+## Using with Ocsigen Server: ocsipersist-dbm-config
+
+If you want to configure Ocsipersist-dbm from Ocsigen Server's configuration file, use package [ocsipersist-dbm-config](../ocsipersist-dbm-config/Ocsipersist_config/index.html).
+
+
+---
+
+# ocsipersist-pgsql
+
+PostgreSQL backend for Ocsipersist. For the API documentation see OPAM package [ocsipersist](../ocsipersist/Ocsipersist/index.html). This page describes how to configure the PostgreSQL backend.
+
+
+## Using as a library
+
+If you are not using Ocsigen Server's configuration file, add library `ocsipersist-pgsql.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file.
+
+
+## Using with Ocsigen Server: ocsipersist-pgsql-config
+
+If you want to configure Ocsipersist-pgsql from Ocsigen Server's configuration file, use package [ocsipersist-pgsql-config](../ocsipersist-pgsql-config/Ocsipersist_config/index.html).
+
+
+---
+
+# OCaml Package Documentation
+
+- [ocsipersist](ocsipersist/index.md)
+- [ocsipersist-dbm](ocsipersist-dbm/index.md)
+- [ocsipersist-dbm-config](ocsipersist-dbm-config/index.md)
+- [ocsipersist-lib](ocsipersist-lib/index.md)
+- [ocsipersist-pgsql](ocsipersist-pgsql/index.md)
+- [ocsipersist-pgsql-config](ocsipersist-pgsql-config/index.md)
+- [ocsipersist-sqlite](ocsipersist-sqlite/index.md)
+- [ocsipersist-sqlite-config](ocsipersist-sqlite-config/index.md)
+
+
+---
+
+# ocsipersist-dbm-config index
+
+
+## Library ocsipersist-dbm-config
+
+The entry point of this library is the module: [`Ocsipersist_config`](./Ocsipersist_config.md).
+
+
+---
+
+# ocsipersist-lib index
+
+
+## Library ocsipersist-lib
+
+The entry point of this library is the module: [`Ocsipersist_lib`](./Ocsipersist_lib.md).
+
+
+---
+
+# ocsipersist-pgsql-config index
+
+
+## Library ocsipersist-pgsql-config
+
+The entry point of this library is the module: [`Ocsipersist_config`](./Ocsipersist_config.md).
+
+
+---
+
+# ocsipersist-sqlite-config index
+
+
+## Library ocsipersist-sqlite-config
+
+The entry point of this library is the module: [`Ocsipersist_config`](./Ocsipersist_config.md).
+
+
+---
+
+# Module `Ocsipersist`
+
+Persistent key-value store interface for OCaml. This is a virtual library defining a unified frontend for a number of key-value storage implementations. Implementations of the following backends currently exist: SQLite, DBM, PostgreSQL. You can choose the backend you prefer by installing packages `ocsipersist-sqlite`, `ocsipersist-dbm` or `ocsipersist-pgsql`.
+
+Library `Ocsipersist_settings`, provided by each of the backends, contain the configuration options for your stores.
+
+Packages `ocsipersist-sqlite-config`, `ocsipersist-dbm-config` and `ocsipersist-pgsql-config` add the possibility to configure the corresponding backends from Ocsigen Server's configuration file.
+
+Ocsipersist is used by Eliom for persistent session storages and references.
+
+Ocsipersist defines several interfaces:
+
+- `Ref` is the simpler the use: it provides persistent references
+- `Store` is a lower level interface for persistent values
+- `Polymorphic` is a polymorphic table, using Mahshal
+- `Functorial` is a typed interface for your own data type
+Example of use from the toplevel:
+
+```ocaml
+# #require "lwt_ppx";;
+(* #thread;; if you are using OCaml < 5.0.0 *)
+# #require "ocsipersist-sqlite";;
+# Ocsipersist.init ();;
+# let r = Ocsipersist.Ref.ref ~persistent:"r" 444;;
+val r : int Ocsipersist.Ref.t = <abstr>
+# Lwt_main.run (let%lwt v = Ocsipersist.Ref.get r in print_int v; Lwt.return_unit);;
+444- : unit = ()
+```
+```ocaml
+module Functorial : Ocsipersist_lib.Sigs.FUNCTORIAL
+```
+Functorial frontent. Allows for custom (de)serialisation functions, which keeps data human-readable in the backend.
+
+```ocaml
+module type TABLE = Ocsipersist_lib.Sigs.TABLE
+```
+Table representation as generated by the functor [`Functorial.Table`](./Ocsipersist-Functorial-Table.md)
+
+```ocaml
+module Polymorphic : Ocsipersist_lib.Sigs.POLYMORPHIC
+```
+Polymorphic frontent. Relies on `Marshal` for (de)serialisation, which means that data will be stored in the backend in a fashion that is not necessarily easily readable by non-OCaml-based life forms. If this is an issue for you, you can rely on the functorial frontend instead.
+
+```ocaml
+type 'value table = 'value Polymorphic.table
+```
+Table representation as generated by the function [`Polymorphic.open_table`](./Ocsipersist-Polymorphic.md#val-open_table)
+
+```ocaml
+module Ref : Ocsipersist_lib.Sigs.REF
+```
+Simple interface for persistent references. Relies on `Stdlib.Marshal` for (de)serialisation, which entails the same limitations as for the [`Polymorphic`](./Ocsipersist-Polymorphic.md) frontend. If this is an issue you can rely on [`Functorial`](./Ocsipersist-Functorial.md) frontend instead (see [`TABLE.Variable`](./../ocsipersist-lib/Ocsipersist_lib-Sigs-module-type-TABLE-Variable.md)).
+
+```ocaml
+module Store : Ocsipersist_lib.Sigs.STORE
+```
+The variable store allows for the persistent storage of individual variables. Relies on `Stdlib.Marshal` for (de)serialisation, which entails the same limitations as for the [`Polymorphic`](./Ocsipersist-Polymorphic.md) frontend. If this is an issue you can rely on [`Functorial`](./Ocsipersist-Functorial.md) frontend instead (see [`TABLE.Variable`](./../ocsipersist-lib/Ocsipersist_lib-Sigs-module-type-TABLE-Variable.md)).
+
+```ocaml
+type store = Store.store
+```
+```ocaml
+type 'a variable = 'a Store.t
+```
+```ocaml
+module Ref_json : Ocsipersist_lib.Sigs.REF_JSON
+```
+Type-safe persistent references using `Deriving_Json` for serialisation. Unlike [`Ref`](./Ocsipersist-Ref.md), this does not rely on `Stdlib.Marshal` and is safe across OCaml versions. Requires types annotated with `[@@deriving json]` (from `js_of_ocaml-ppx_deriving_json`).
+
+```ocaml
+module Store_json : Ocsipersist_lib.Sigs.STORE_JSON
+```
+Type-safe variable store using `Deriving_Json` for serialisation. Unlike [`Store`](./Ocsipersist-Store.md), this does not rely on `Stdlib.Marshal` and is safe across OCaml versions. Requires types annotated with `[@@deriving json]` (from `js_of_ocaml-ppx_deriving_json`).
+
+```ocaml
+val init : unit -> unit
+```
+
+
+---
+
+# Module `Ocsipersist_lib`
+
+This modules provides tools for creating more implementations of the `Ocsipersist` virtual module.
+
+```ocaml
+module Sigs : sig ... end
+```
+```ocaml
+val is_valid_name_char : char -> bool
+```
+```ocaml
+val validate_name : string -> unit
+```
+```ocaml
+module Polymorphic (Functorial : Sigs.FUNCTORIAL) : Sigs.POLYMORPHIC
+```
+deriving polymorphic interface from the functorial one
+
+```ocaml
+module Variable (T : sig ... end) : sig ... end
+```
+```ocaml
+module Ref (Store : Sigs.STORE) : sig ... end
+```
+```ocaml
+module Store_json (Functorial : Sigs.FUNCTORIAL) : Sigs.STORE_JSON
+```
+```ocaml
+module Ref_json (Functorial : Sigs.FUNCTORIAL) : Sigs.REF_JSON
+```
+Type-safe persistent references using `Deriving_Json` for serialisation.
+
+
+---
+
+# Module `Ocsipersist_config`
+
+If you are using the SQLite backend of Ocsipersist with Ocsigen Server with a configuration file, install package `ocsipersist-sqlite-config` and use the following configuration tags. All sub-tags of the `extension` tag are optional.
+
+```xml
+<extension findlib-package="ocsipersist-sqlite-config">
+  <database file="data/ocsidb"/>
+</extension>
+```
+
+
+---
+
+# Module `Ocsipersist_config`
+
+If you are using the DBM backend of Ocsipersist with Ocsigen Server with a configuration file, install package `ocsipersist-dbm-config` and use the following configuration tags. All sub-tags of the `extension` tag are optional.
+
+```xml
+<extension findlib-package="ocsipersist-dbm-config">
+  <delayloading val="false"/>
+  <store dir="store"/>
+  <ocsidbm name="ocsidbm"/>
+</extension>
+```
+
+
+---
+
+# Module `Ocsipersist_config`
+
+If you are using the PostgreSQL backend of Ocsipersist with Ocsigen Server with a configuration file, install package `ocsipersist-pgsql-config` and use the following configuration tags. All attributes of the `database` tag are optional.
+
+One can either define a host to connect to:
+
+```xml
+<extension findlib-package="ocsipersist-pgsql-config">
+  <database
+     host="localhost"
+     port="3000"
+     user="ocsipersist"
+     password="<secret>"
+     size_conn_pool = "16"
+  />
+</extension>
+```
+Or a UNIX domain socket:
+
+```xml
+<extension findlib-package="ocsipersist-pgsql-config">
+  <database
+    unix_domain_socket_dir = "pgsql_socket"
+    user="ocsipersist"
+    password="<secret>"
+    size_conn_pool = "16"
+  />
+</extension>
+```
+
+
+---
+
+# Module `Ocsidbmtypes`
+
+```ocaml
+exception Ocsidbm_error
+```
+```ocaml
+type query = 
+  | Get of string * string
+  | Remove of string * string
+  | Replace of string * string * string
+  | Replace_if_exists of string * string * string
+  | Nextkey of string
+  | Firstkey of string
+  | Length of string
+```
+```ocaml
+type answer = 
+  | Ok
+  | Dbm_not_found
+  | Value of string
+  | End
+  | Key of string
+  | Error of exn
+```
+
+
+---
+
+# Module `Ocsipersist_settings`
+
+```ocaml
+val set_store : string -> unit
+```
+```ocaml
+val set_delay_loading : bool -> unit
+```
+```ocaml
+val set_ocsidbm : string -> unit
+```
+```ocaml
+val set_error_log_path : string -> unit
+```
+
+
+---
+
+# Module `Column.Float`
+
+```ocaml
+type t = float
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Json.C`
+
+```ocaml
+type t
+```
+```ocaml
+val t : t Deriving_Json.t
+```
+
+
+---
+
+# Module `Column.Json`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Marshal.C`
+
+```ocaml
+type t
+```
+
+
+---
+
+# Module `Column.Marshal`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Column.String`
+
+```ocaml
+type t = string
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Functorial.Column`
+
+```ocaml
+module String : COLUMN with type t = string
+```
+```ocaml
+module Float : COLUMN with type t = float
+```
+```ocaml
+module Marshal (C : sig ... end) : COLUMN with type t = C.t
+```
+```ocaml
+module Json (C : sig ... end) : COLUMN with type t = C.t
+```
+
+
+---
+
+# Module `Table.Variable`
+
+```ocaml
+type t
+```
+```ocaml
+val make : name:key -> default:value -> t
+```
+```ocaml
+val make_lazy : name:key -> default:(unit -> value) -> t
+```
+```ocaml
+val make_lazy_lwt : name:key -> default:(unit -> value Lwt.t) -> t
+```
+```ocaml
+val get : t -> value Lwt.t
+```
+```ocaml
+val set : t -> value -> unit Lwt.t
+```
+
+
+---
+
+# Parameter `Table._`
+
+```ocaml
+val name : string
+```
+
+
+---
+
+# Parameter `Table.Key`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Table.Value`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Functorial.Table`
+
+
+## Parameters
+
+```ocaml
+module _ : sig ... end
+```
+```ocaml
+module Key : COLUMN
+```
+```ocaml
+module Value : COLUMN
+```
+
+## Signature
+
+```ocaml
+type key = Key.t
+```
+```ocaml
+type value = Value.t
+```
+```ocaml
+val name : string
+```
+```ocaml
+val find : key -> value Lwt.t
+```
+```ocaml
+val add : key -> value -> unit Lwt.t
+```
+```ocaml
+val replace_if_exists : key -> value -> unit Lwt.t
+```
+```ocaml
+val remove : key -> unit Lwt.t
+```
+```ocaml
+val modify_opt : key -> (value option -> value option) -> unit Lwt.t
+```
+```ocaml
+val length : unit -> int Lwt.t
+```
+```ocaml
+val iter : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+val fold : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> 'a -> 'a Lwt.t) ->
+  'a ->
+  'a Lwt.t
+```
+```ocaml
+val iter_block : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit) ->
+  unit Lwt.t
+```
+```ocaml
+val iter_batch : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  ((key * value) list -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+module Variable : sig ... end
+```
+
+
+---
+
+# Module type `Functorial.COLUMN`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Polymorphic.Functorial`
+
+```ocaml
+type internal
+```
+```ocaml
+module type COLUMN = sig ... end
+```
+```ocaml
+module Table
+  (_ : sig ... end)
+  (Key : COLUMN)
+  (Value : COLUMN) : 
+  Sigs.TABLE with type key = Key.t and type value = Value.t
+```
+```ocaml
+module Column : sig ... end
+```
+
+
+---
+
+# Module `Ocsipersist_lib.Polymorphic`
+
+deriving polymorphic interface from the functorial one
+
+
+## Parameters
+
+```ocaml
+module Functorial : Sigs.FUNCTORIAL
+```
+
+## Signature
+
+```ocaml
+type 'value table
+```
+Type of persistent table
+
+```ocaml
+val table_name : 'value table -> string Lwt.t
+```
+returns the name of the table
+
+```ocaml
+val open_table : string -> 'value table Lwt.t
+```
+Open a table (and create it if it does not exist)
+
+```ocaml
+val find : 'value table -> string -> 'value Lwt.t
+```
+`find table key` gives the value associated to `key`. Fails with `Not_found` if not found.
+
+```ocaml
+val add : 'value table -> string -> 'value -> unit Lwt.t
+```
+`add table key value` associates `value` to `key`. If the database already contains data associated with `key`, that data is discarded and silently replaced by the new data.
+
+```ocaml
+val replace_if_exists : 'value table -> string -> 'value -> unit Lwt.t
+```
+`replace_if_exists table key value` associates `value` to `key` only if `key` is already bound. If the database does not contain any data associated with `key`, fails with `Not_found`.
+
+```ocaml
+val remove : 'value table -> string -> unit Lwt.t
+```
+`remove table key` removes the entry in the table if it exists
+
+```ocaml
+val length : 'value table -> int Lwt.t
+```
+Size of a table.
+
+```ocaml
+val iter : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
+```
+Important warning: this iterator may not iter on all data of the table if another thread is modifying it in the same time. Nonetheless, it should not miss more than a very few data from time to time, except if the table is very old (at least 9 223 372 036 854 775 807 insertions).
+
+```ocaml
+val fold : (string -> 'a -> 'b -> 'b Lwt.t) -> 'a table -> 'b -> 'b Lwt.t
+```
+Important warning: this iterator may not iter on all data of the table if another thread is modifying it in the same time. Nonetheless, it should not miss more than a very few data from time to time, except if the table is very old (at least 9 223 372 036 854 775 807 insertions).
+
+```ocaml
+val iter_step : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
+```
+deprecated Use iter instead.
+```ocaml
+val fold_step : (string -> 'a -> 'b -> 'b Lwt.t) -> 'a table -> 'b -> 'b Lwt.t
+```
+deprecated Use fold instead.
+```ocaml
+val iter_block : (string -> 'a -> unit) -> 'a table -> unit Lwt.t
+```
+MAJOR WARNING: Unlike iter\_step, this iterator won't miss any entry and will run in one shot. It is therefore more efficient, BUT: it will lock the WHOLE database during its execution, thus preventing ANYBODY from accessing it (including the function f which is iterated). As a consequence: you MUST NOT use any function from ocsipersist in f, otherwise you would lock yourself and everybody else\! Be VERY cautious.
+
+
+---
+
+# Parameter `Ref.Store`
+
+```ocaml
+type 'a t
+```
+Type of persistent data
+
+```ocaml
+type store
+```
+Data are divided into stores. Create one store for your project, where you will save all your data.
+
+```ocaml
+val open_store : string -> store Lwt.t
+```
+Open a store (and create it if it does not exist)
+
+```ocaml
+val make_persistent : store:store -> name:string -> default:'a -> 'a t Lwt.t
+```
+`make_persistent store name default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist.
+
+```ocaml
+val make_persistent_lazy : 
+  store:store ->
+  name:string ->
+  default:(unit -> 'a) ->
+  'a t Lwt.t
+```
+Same as make\_persistent but the default value is evaluated only if needed
+
+```ocaml
+val make_persistent_lazy_lwt : 
+  store:store ->
+  name:string ->
+  default:(unit -> 'a Lwt.t) ->
+  'a t Lwt.t
+```
+Lwt version of make\_persistent\_lazy.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+`get pv` gives the value of `pv`
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+`set pv value` sets a persistent value `pv` to `value`
+
+
+---
+
+# Module `Ocsipersist_lib.Ref`
+
+
+## Parameters
+
+```ocaml
+module Store : Sigs.STORE
+```
+
+## Signature
+
+```ocaml
+val store : Store.store Lwt.t lazy_t
+```
+```ocaml
+type 'a t = 
+  | Ref of 'a Stdlib.ref
+  | Per of 'a Store.t Lwt.t
+```
+```ocaml
+val ref : ?persistent:string -> 'a -> 'a t
+```
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+
+
+---
+
+# Module `Column.Float`
+
+```ocaml
+type t = float
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Json.C`
+
+```ocaml
+type t
+```
+```ocaml
+val t : t Deriving_Json.t
+```
+
+
+---
+
+# Module `Column.Json`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Marshal.C`
+
+```ocaml
+type t
+```
+
+
+---
+
+# Module `Column.Marshal`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Column.String`
+
+```ocaml
+type t = string
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Functorial.Column`
+
+```ocaml
+module String : COLUMN with type t = string
+```
+```ocaml
+module Float : COLUMN with type t = float
+```
+```ocaml
+module Marshal (C : sig ... end) : COLUMN with type t = C.t
+```
+```ocaml
+module Json (C : sig ... end) : COLUMN with type t = C.t
+```
+
+
+---
+
+# Module `Table.Variable`
+
+```ocaml
+type t
+```
+```ocaml
+val make : name:key -> default:value -> t
+```
+```ocaml
+val make_lazy : name:key -> default:(unit -> value) -> t
+```
+```ocaml
+val make_lazy_lwt : name:key -> default:(unit -> value Lwt.t) -> t
+```
+```ocaml
+val get : t -> value Lwt.t
+```
+```ocaml
+val set : t -> value -> unit Lwt.t
+```
+
+
+---
+
+# Parameter `Table._`
+
+```ocaml
+val name : string
+```
+
+
+---
+
+# Parameter `Table.Key`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Table.Value`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Functorial.Table`
+
+
+## Parameters
+
+```ocaml
+module _ : sig ... end
+```
+```ocaml
+module Key : COLUMN
+```
+```ocaml
+module Value : COLUMN
+```
+
+## Signature
+
+```ocaml
+type key = Key.t
+```
+```ocaml
+type value = Value.t
+```
+```ocaml
+val name : string
+```
+```ocaml
+val find : key -> value Lwt.t
+```
+```ocaml
+val add : key -> value -> unit Lwt.t
+```
+```ocaml
+val replace_if_exists : key -> value -> unit Lwt.t
+```
+```ocaml
+val remove : key -> unit Lwt.t
+```
+```ocaml
+val modify_opt : key -> (value option -> value option) -> unit Lwt.t
+```
+```ocaml
+val length : unit -> int Lwt.t
+```
+```ocaml
+val iter : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+val fold : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> 'a -> 'a Lwt.t) ->
+  'a ->
+  'a Lwt.t
+```
+```ocaml
+val iter_block : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit) ->
+  unit Lwt.t
+```
+```ocaml
+val iter_batch : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  ((key * value) list -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+module Variable : sig ... end
+```
+
+
+---
+
+# Module type `Functorial.COLUMN`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Ref_json.Functorial`
+
+```ocaml
+type internal
+```
+```ocaml
+module type COLUMN = sig ... end
+```
+```ocaml
+module Table
+  (_ : sig ... end)
+  (Key : COLUMN)
+  (Value : COLUMN) : 
+  Sigs.TABLE with type key = Key.t and type value = Value.t
+```
+```ocaml
+module Column : sig ... end
+```
+
+
+---
+
+# Module `Ocsipersist_lib.Ref_json`
+
+Type-safe persistent references using `Deriving_Json` for serialisation.
+
+
+## Parameters
+
+```ocaml
+module Functorial : Sigs.FUNCTORIAL
+```
+
+## Signature
+
+```ocaml
+type 'a t
+```
+The type of (persistent or not) references
+
+```ocaml
+val ref : ?persistent:string -> 'a Deriving_Json.t -> 'a -> 'a t
+```
+`ref ?persistent json default` creates a reference. If optional parameter `?persistent` is absent, the reference will not be persistent (implemented using OCaml references). Otherwise, the value of `persistent` will be used as key for the value in the persistent reference table. If the reference already exists, the current value is kept.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+Get the value of a reference
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+Set the value of a reference
+
+
+---
+
+# Module `Column.Float`
+
+```ocaml
+type t = float
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Json.C`
+
+```ocaml
+type t
+```
+```ocaml
+val t : t Deriving_Json.t
+```
+
+
+---
+
+# Module `Column.Json`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Marshal.C`
+
+```ocaml
+type t
+```
+
+
+---
+
+# Module `Column.Marshal`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Column.String`
+
+```ocaml
+type t = string
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `FUNCTORIAL.Column`
+
+```ocaml
+module String : COLUMN with type t = string
+```
+```ocaml
+module Float : COLUMN with type t = float
+```
+```ocaml
+module Marshal (C : sig ... end) : COLUMN with type t = C.t
+```
+```ocaml
+module Json (C : sig ... end) : COLUMN with type t = C.t
+```
+
+
+---
+
+# Module `Table.Variable`
+
+```ocaml
+type t
+```
+```ocaml
+val make : name:key -> default:value -> t
+```
+```ocaml
+val make_lazy : name:key -> default:(unit -> value) -> t
+```
+```ocaml
+val make_lazy_lwt : name:key -> default:(unit -> value Lwt.t) -> t
+```
+```ocaml
+val get : t -> value Lwt.t
+```
+```ocaml
+val set : t -> value -> unit Lwt.t
+```
+
+
+---
+
+# Parameter `Table._`
+
+```ocaml
+val name : string
+```
+
+
+---
+
+# Parameter `Table.Key`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Table.Value`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `FUNCTORIAL.Table`
+
+
+## Parameters
+
+```ocaml
+module _ : sig ... end
+```
+```ocaml
+module Key : COLUMN
+```
+```ocaml
+module Value : COLUMN
+```
+
+## Signature
+
+```ocaml
+type key = Key.t
+```
+```ocaml
+type value = Value.t
+```
+```ocaml
+val name : string
+```
+```ocaml
+val find : key -> value Lwt.t
+```
+```ocaml
+val add : key -> value -> unit Lwt.t
+```
+```ocaml
+val replace_if_exists : key -> value -> unit Lwt.t
+```
+```ocaml
+val remove : key -> unit Lwt.t
+```
+```ocaml
+val modify_opt : key -> (value option -> value option) -> unit Lwt.t
+```
+```ocaml
+val length : unit -> int Lwt.t
+```
+```ocaml
+val iter : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+val fold : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> 'a -> 'a Lwt.t) ->
+  'a ->
+  'a Lwt.t
+```
+```ocaml
+val iter_block : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit) ->
+  unit Lwt.t
+```
+```ocaml
+val iter_batch : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  ((key * value) list -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+module Variable : sig ... end
+```
+
+
+---
+
+# Module type `FUNCTORIAL.COLUMN`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module type `Sigs.FUNCTORIAL`
+
+```ocaml
+type internal
+```
+```ocaml
+module type COLUMN = sig ... end
+```
+```ocaml
+module Table
+  (_ : sig ... end)
+  (Key : COLUMN)
+  (Value : COLUMN) : 
+  TABLE with type key = Key.t and type value = Value.t
+```
+```ocaml
+module Column : sig ... end
+```
+
+
+---
+
+# Module type `Sigs.POLYMORPHIC`
+
+```ocaml
+type 'value table
+```
+Type of persistent table
+
+```ocaml
+val table_name : 'value table -> string Lwt.t
+```
+returns the name of the table
+
+```ocaml
+val open_table : string -> 'value table Lwt.t
+```
+Open a table (and create it if it does not exist)
+
+```ocaml
+val find : 'value table -> string -> 'value Lwt.t
+```
+`find table key` gives the value associated to `key`. Fails with `Not_found` if not found.
+
+```ocaml
+val add : 'value table -> string -> 'value -> unit Lwt.t
+```
+`add table key value` associates `value` to `key`. If the database already contains data associated with `key`, that data is discarded and silently replaced by the new data.
+
+```ocaml
+val replace_if_exists : 'value table -> string -> 'value -> unit Lwt.t
+```
+`replace_if_exists table key value` associates `value` to `key` only if `key` is already bound. If the database does not contain any data associated with `key`, fails with `Not_found`.
+
+```ocaml
+val remove : 'value table -> string -> unit Lwt.t
+```
+`remove table key` removes the entry in the table if it exists
+
+```ocaml
+val length : 'value table -> int Lwt.t
+```
+Size of a table.
+
+```ocaml
+val iter : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
+```
+Important warning: this iterator may not iter on all data of the table if another thread is modifying it in the same time. Nonetheless, it should not miss more than a very few data from time to time, except if the table is very old (at least 9 223 372 036 854 775 807 insertions).
+
+```ocaml
+val fold : (string -> 'a -> 'b -> 'b Lwt.t) -> 'a table -> 'b -> 'b Lwt.t
+```
+Important warning: this iterator may not iter on all data of the table if another thread is modifying it in the same time. Nonetheless, it should not miss more than a very few data from time to time, except if the table is very old (at least 9 223 372 036 854 775 807 insertions).
+
+```ocaml
+val iter_step : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
+```
+deprecated Use iter instead.
+```ocaml
+val fold_step : (string -> 'a -> 'b -> 'b Lwt.t) -> 'a table -> 'b -> 'b Lwt.t
+```
+deprecated Use fold instead.
+```ocaml
+val iter_block : (string -> 'a -> unit) -> 'a table -> unit Lwt.t
+```
+MAJOR WARNING: Unlike iter\_step, this iterator won't miss any entry and will run in one shot. It is therefore more efficient, BUT: it will lock the WHOLE database during its execution, thus preventing ANYBODY from accessing it (including the function f which is iterated). As a consequence: you MUST NOT use any function from ocsipersist in f, otherwise you would lock yourself and everybody else\! Be VERY cautious.
+
+
+---
+
+# Module type `Sigs.REF`
+
+Persistent references for OCaml
+
+```ocaml
+type 'a t
+```
+The type of (persistent or not) references
+
+```ocaml
+val ref : ?persistent:string -> 'a -> 'a t
+```
+`ref ?persistent default` creates a reference. If optional parameter `?persistent` is absent, the reference will not be persistent (implemented using OCaml references). Otherwise, the value of `persistent` will be used as key for the value in the persistent reference table. If the reference already exists, the current value is kept. Be careful to change this name every time you change the type of the value.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+Get the value of a reference
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+Set the value of a reference
+
+
+---
+
+# Module type `Sigs.REF_JSON`
+
+Type-safe persistent references using `Deriving_Json` for serialisation.
+
+```ocaml
+type 'a t
+```
+The type of (persistent or not) references
+
+```ocaml
+val ref : ?persistent:string -> 'a Deriving_Json.t -> 'a -> 'a t
+```
+`ref ?persistent json default` creates a reference. If optional parameter `?persistent` is absent, the reference will not be persistent (implemented using OCaml references). Otherwise, the value of `persistent` will be used as key for the value in the persistent reference table. If the reference already exists, the current value is kept.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+Get the value of a reference
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+Set the value of a reference
+
+
+---
+
+# Module type `Sigs.STORE`
+
+```ocaml
+type 'a t
+```
+Type of persistent data
+
+```ocaml
+type store
+```
+Data are divided into stores. Create one store for your project, where you will save all your data.
+
+```ocaml
+val open_store : string -> store Lwt.t
+```
+Open a store (and create it if it does not exist)
+
+```ocaml
+val make_persistent : store:store -> name:string -> default:'a -> 'a t Lwt.t
+```
+`make_persistent store name default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist.
+
+```ocaml
+val make_persistent_lazy : 
+  store:store ->
+  name:string ->
+  default:(unit -> 'a) ->
+  'a t Lwt.t
+```
+Same as make\_persistent but the default value is evaluated only if needed
+
+```ocaml
+val make_persistent_lazy_lwt : 
+  store:store ->
+  name:string ->
+  default:(unit -> 'a Lwt.t) ->
+  'a t Lwt.t
+```
+Lwt version of make\_persistent\_lazy.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+`get pv` gives the value of `pv`
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+`set pv value` sets a persistent value `pv` to `value`
+
+
+---
+
+# Module type `Sigs.STORE_JSON`
+
+```ocaml
+type 'a t
+```
+Type of persistent data
+
+```ocaml
+type store
+```
+Data are divided into stores. Create one store for your project, where you will save all your data.
+
+```ocaml
+val open_store : string -> store Lwt.t
+```
+Open a store (and create it if it does not exist)
+
+```ocaml
+val make_persistent : 
+  store:store ->
+  name:string ->
+  json:'a Deriving_Json.t ->
+  default:'a ->
+  'a t Lwt.t
+```
+`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation.
+
+```ocaml
+val make_persistent_lazy : 
+  store:store ->
+  name:string ->
+  json:'a Deriving_Json.t ->
+  default:(unit -> 'a) ->
+  'a t Lwt.t
+```
+Same as make\_persistent but the default value is evaluated only if needed
+
+```ocaml
+val make_persistent_lazy_lwt : 
+  store:store ->
+  name:string ->
+  json:'a Deriving_Json.t ->
+  default:(unit -> 'a Lwt.t) ->
+  'a t Lwt.t
+```
+Lwt version of make\_persistent\_lazy.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+`get pv` gives the value of `pv`
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+`set pv value` sets a persistent value `pv` to `value`
+
+
+---
+
+# Module `TABLE.Variable`
+
+```ocaml
+type t
+```
+```ocaml
+val make : name:key -> default:value -> t
+```
+```ocaml
+val make_lazy : name:key -> default:(unit -> value) -> t
+```
+```ocaml
+val make_lazy_lwt : name:key -> default:(unit -> value Lwt.t) -> t
+```
+```ocaml
+val get : t -> value Lwt.t
+```
+```ocaml
+val set : t -> value -> unit Lwt.t
+```
+
+
+---
+
+# Module type `Sigs.TABLE`
+
+```ocaml
+type key
+```
+```ocaml
+type value
+```
+```ocaml
+val name : string
+```
+```ocaml
+val find : key -> value Lwt.t
+```
+```ocaml
+val add : key -> value -> unit Lwt.t
+```
+```ocaml
+val replace_if_exists : key -> value -> unit Lwt.t
+```
+```ocaml
+val remove : key -> unit Lwt.t
+```
+```ocaml
+val modify_opt : key -> (value option -> value option) -> unit Lwt.t
+```
+```ocaml
+val length : unit -> int Lwt.t
+```
+```ocaml
+val iter : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+val fold : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> 'a -> 'a Lwt.t) ->
+  'a ->
+  'a Lwt.t
+```
+```ocaml
+val iter_block : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit) ->
+  unit Lwt.t
+```
+```ocaml
+val iter_batch : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  ((key * value) list -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+module Variable : sig ... end
+```
+
+
+---
+
+# Module `Ocsipersist_lib.Sigs`
+
+```ocaml
+module type TABLE = sig ... end
+```
+```ocaml
+module type FUNCTORIAL = sig ... end
+```
+```ocaml
+module type POLYMORPHIC = sig ... end
+```
+```ocaml
+module type REF = sig ... end
+```
+Persistent references for OCaml
+
+```ocaml
+module type STORE = sig ... end
+```
+```ocaml
+module type REF_JSON = sig ... end
+```
+Type-safe persistent references using `Deriving_Json` for serialisation.
+
+```ocaml
+module type STORE_JSON = sig ... end
+```
+
+
+---
+
+# Module `Column.Float`
+
+```ocaml
+type t = float
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Json.C`
+
+```ocaml
+type t
+```
+```ocaml
+val t : t Deriving_Json.t
+```
+
+
+---
+
+# Module `Column.Json`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Marshal.C`
+
+```ocaml
+type t
+```
+
+
+---
+
+# Module `Column.Marshal`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Column.String`
+
+```ocaml
+type t = string
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Functorial.Column`
+
+```ocaml
+module String : COLUMN with type t = string
+```
+```ocaml
+module Float : COLUMN with type t = float
+```
+```ocaml
+module Marshal (C : sig ... end) : COLUMN with type t = C.t
+```
+```ocaml
+module Json (C : sig ... end) : COLUMN with type t = C.t
+```
+
+
+---
+
+# Module `Table.Variable`
+
+```ocaml
+type t
+```
+```ocaml
+val make : name:key -> default:value -> t
+```
+```ocaml
+val make_lazy : name:key -> default:(unit -> value) -> t
+```
+```ocaml
+val make_lazy_lwt : name:key -> default:(unit -> value Lwt.t) -> t
+```
+```ocaml
+val get : t -> value Lwt.t
+```
+```ocaml
+val set : t -> value -> unit Lwt.t
+```
+
+
+---
+
+# Parameter `Table._`
+
+```ocaml
+val name : string
+```
+
+
+---
+
+# Parameter `Table.Key`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Table.Value`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Functorial.Table`
+
+
+## Parameters
+
+```ocaml
+module _ : sig ... end
+```
+```ocaml
+module Key : COLUMN
+```
+```ocaml
+module Value : COLUMN
+```
+
+## Signature
+
+```ocaml
+type key = Key.t
+```
+```ocaml
+type value = Value.t
+```
+```ocaml
+val name : string
+```
+```ocaml
+val find : key -> value Lwt.t
+```
+```ocaml
+val add : key -> value -> unit Lwt.t
+```
+```ocaml
+val replace_if_exists : key -> value -> unit Lwt.t
+```
+```ocaml
+val remove : key -> unit Lwt.t
+```
+```ocaml
+val modify_opt : key -> (value option -> value option) -> unit Lwt.t
+```
+```ocaml
+val length : unit -> int Lwt.t
+```
+```ocaml
+val iter : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+val fold : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> 'a -> 'a Lwt.t) ->
+  'a ->
+  'a Lwt.t
+```
+```ocaml
+val iter_block : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit) ->
+  unit Lwt.t
+```
+```ocaml
+val iter_batch : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  ((key * value) list -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+module Variable : sig ... end
+```
+
+
+---
+
+# Module type `Functorial.COLUMN`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Store_json.Functorial`
+
+```ocaml
+type internal
+```
+```ocaml
+module type COLUMN = sig ... end
+```
+```ocaml
+module Table
+  (_ : sig ... end)
+  (Key : COLUMN)
+  (Value : COLUMN) : 
+  Sigs.TABLE with type key = Key.t and type value = Value.t
+```
+```ocaml
+module Column : sig ... end
+```
+
+
+---
+
+# Module `Ocsipersist_lib.Store_json`
+
+
+## Parameters
+
+```ocaml
+module Functorial : Sigs.FUNCTORIAL
+```
+
+## Signature
+
+```ocaml
+type 'a t
+```
+Type of persistent data
+
+```ocaml
+type store
+```
+Data are divided into stores. Create one store for your project, where you will save all your data.
+
+```ocaml
+val open_store : string -> store Lwt.t
+```
+Open a store (and create it if it does not exist)
+
+```ocaml
+val make_persistent : 
+  store:store ->
+  name:string ->
+  json:'a Deriving_Json.t ->
+  default:'a ->
+  'a t Lwt.t
+```
+`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation.
+
+```ocaml
+val make_persistent_lazy : 
+  store:store ->
+  name:string ->
+  json:'a Deriving_Json.t ->
+  default:(unit -> 'a) ->
+  'a t Lwt.t
+```
+Same as make\_persistent but the default value is evaluated only if needed
+
+```ocaml
+val make_persistent_lazy_lwt : 
+  store:store ->
+  name:string ->
+  json:'a Deriving_Json.t ->
+  default:(unit -> 'a Lwt.t) ->
+  'a t Lwt.t
+```
+Lwt version of make\_persistent\_lazy.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+`get pv` gives the value of `pv`
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+`set pv value` sets a persistent value `pv` to `value`
+
+
+---
+
+# Parameter `Variable.T`
+
+```ocaml
+type k
+```
+```ocaml
+type v
+```
+```ocaml
+val find : k -> v Lwt.t
+```
+```ocaml
+val add : k -> v -> unit Lwt.t
+```
+
+
+---
+
+# Module `Ocsipersist_lib.Variable`
+
+
+## Parameters
+
+```ocaml
+module T : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = {
+  name : T.k;
+  default : unit -> T.v Lwt.t;
+}
+```
+```ocaml
+val make_lazy_lwt : name:T.k -> default:(unit -> T.v Lwt.t) -> t
+```
+```ocaml
+val make_lazy : name:T.k -> default:(unit -> T.v) -> t
+```
+```ocaml
+val make : name:T.k -> default:T.v -> t
+```
+```ocaml
+val get : t -> T.v Lwt.t
+```
+```ocaml
+val set : t -> T.v -> unit Lwt.t
+```
+
+
+---
+
+# Module `Ocsipersist_settings`
+
+```ocaml
+val set_host : string -> unit
+```
+```ocaml
+val set_port : int -> unit
+```
+```ocaml
+val set_user : string -> unit
+```
+```ocaml
+val set_password : string -> unit
+```
+```ocaml
+val set_database : string -> unit
+```
+```ocaml
+val set_unix_domain_socket_dir : string -> unit
+```
+```ocaml
+val set_connexion_pool_size : int -> unit
+```
+
+
+---
+
+# Module `Ocsipersist_settings`
+
+```ocaml
+val set_db_file : string -> unit
+```
+
+
+---
+
+# Module `Column.Float`
+
+```ocaml
+type t = float
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Json.C`
+
+```ocaml
+type t
+```
+```ocaml
+val t : t Deriving_Json.t
+```
+
+
+---
+
+# Module `Column.Json`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Marshal.C`
+
+```ocaml
+type t
+```
+
+
+---
+
+# Module `Column.Marshal`
+
+
+## Parameters
+
+```ocaml
+module C : sig ... end
+```
+
+## Signature
+
+```ocaml
+type t = C.t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Column.String`
+
+```ocaml
+type t = string
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Functorial.Column`
+
+```ocaml
+module String : COLUMN with type t = string
+```
+```ocaml
+module Float : COLUMN with type t = float
+```
+```ocaml
+module Marshal (C : sig ... end) : COLUMN with type t = C.t
+```
+```ocaml
+module Json (C : sig ... end) : COLUMN with type t = C.t
+```
+
+
+---
+
+# Module `Table.Variable`
+
+```ocaml
+type t
+```
+```ocaml
+val make : name:key -> default:value -> t
+```
+```ocaml
+val make_lazy : name:key -> default:(unit -> value) -> t
+```
+```ocaml
+val make_lazy_lwt : name:key -> default:(unit -> value Lwt.t) -> t
+```
+```ocaml
+val get : t -> value Lwt.t
+```
+```ocaml
+val set : t -> value -> unit Lwt.t
+```
+
+
+---
+
+# Parameter `Table._`
+
+```ocaml
+val name : string
+```
+
+
+---
+
+# Parameter `Table.Key`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Parameter `Table.Value`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Functorial.Table`
+
+
+## Parameters
+
+```ocaml
+module _ : sig ... end
+```
+```ocaml
+module Key : COLUMN
+```
+```ocaml
+module Value : COLUMN
+```
+
+## Signature
+
+```ocaml
+type key = Key.t
+```
+```ocaml
+type value = Value.t
+```
+```ocaml
+val name : string
+```
+```ocaml
+val find : key -> value Lwt.t
+```
+```ocaml
+val add : key -> value -> unit Lwt.t
+```
+```ocaml
+val replace_if_exists : key -> value -> unit Lwt.t
+```
+```ocaml
+val remove : key -> unit Lwt.t
+```
+```ocaml
+val modify_opt : key -> (value option -> value option) -> unit Lwt.t
+```
+```ocaml
+val length : unit -> int Lwt.t
+```
+```ocaml
+val iter : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+val fold : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> 'a -> 'a Lwt.t) ->
+  'a ->
+  'a Lwt.t
+```
+```ocaml
+val iter_block : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  (key -> value -> unit) ->
+  unit Lwt.t
+```
+```ocaml
+val iter_batch : 
+  ?count:int64 ->
+  ?gt:key ->
+  ?geq:key ->
+  ?lt:key ->
+  ?leq:key ->
+  ((key * value) list -> unit Lwt.t) ->
+  unit Lwt.t
+```
+```ocaml
+module Variable : sig ... end
+```
+
+
+---
+
+# Module type `Functorial.COLUMN`
+
+```ocaml
+type t
+```
+```ocaml
+val column_type : string
+```
+```ocaml
+val encode : t -> internal
+```
+```ocaml
+val decode : internal -> t
+```
+
+
+---
+
+# Module `Ocsipersist.Functorial`
+
+Functorial frontent. Allows for custom (de)serialisation functions, which keeps data human-readable in the backend.
+
+```ocaml
+type internal
+```
+```ocaml
+module type COLUMN = sig ... end
+```
+```ocaml
+module Table
+  (_ : sig ... end)
+  (Key : COLUMN)
+  (Value : COLUMN) : 
+  Ocsipersist_lib.Sigs.TABLE with type key = Key.t and type value = Value.t
+```
+```ocaml
+module Column : sig ... end
+```
+
+
+---
+
+# Module `Ocsipersist.Polymorphic`
+
+Polymorphic frontent. Relies on `Marshal` for (de)serialisation, which means that data will be stored in the backend in a fashion that is not necessarily easily readable by non-OCaml-based life forms. If this is an issue for you, you can rely on the functorial frontend instead.
+
+```ocaml
+type 'value table
+```
+Type of persistent table
+
+```ocaml
+val table_name : 'value table -> string Lwt.t
+```
+returns the name of the table
+
+```ocaml
+val open_table : string -> 'value table Lwt.t
+```
+Open a table (and create it if it does not exist)
+
+```ocaml
+val find : 'value table -> string -> 'value Lwt.t
+```
+`find table key` gives the value associated to `key`. Fails with `Not_found` if not found.
+
+```ocaml
+val add : 'value table -> string -> 'value -> unit Lwt.t
+```
+`add table key value` associates `value` to `key`. If the database already contains data associated with `key`, that data is discarded and silently replaced by the new data.
+
+```ocaml
+val replace_if_exists : 'value table -> string -> 'value -> unit Lwt.t
+```
+`replace_if_exists table key value` associates `value` to `key` only if `key` is already bound. If the database does not contain any data associated with `key`, fails with `Not_found`.
+
+```ocaml
+val remove : 'value table -> string -> unit Lwt.t
+```
+`remove table key` removes the entry in the table if it exists
+
+```ocaml
+val length : 'value table -> int Lwt.t
+```
+Size of a table.
+
+```ocaml
+val iter : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
+```
+Important warning: this iterator may not iter on all data of the table if another thread is modifying it in the same time. Nonetheless, it should not miss more than a very few data from time to time, except if the table is very old (at least 9 223 372 036 854 775 807 insertions).
+
+```ocaml
+val fold : (string -> 'a -> 'b -> 'b Lwt.t) -> 'a table -> 'b -> 'b Lwt.t
+```
+Important warning: this iterator may not iter on all data of the table if another thread is modifying it in the same time. Nonetheless, it should not miss more than a very few data from time to time, except if the table is very old (at least 9 223 372 036 854 775 807 insertions).
+
+```ocaml
+val iter_step : (string -> 'a -> unit Lwt.t) -> 'a table -> unit Lwt.t
+```
+deprecated Use iter instead.
+```ocaml
+val fold_step : (string -> 'a -> 'b -> 'b Lwt.t) -> 'a table -> 'b -> 'b Lwt.t
+```
+deprecated Use fold instead.
+```ocaml
+val iter_block : (string -> 'a -> unit) -> 'a table -> unit Lwt.t
+```
+MAJOR WARNING: Unlike iter\_step, this iterator won't miss any entry and will run in one shot. It is therefore more efficient, BUT: it will lock the WHOLE database during its execution, thus preventing ANYBODY from accessing it (including the function f which is iterated). As a consequence: you MUST NOT use any function from ocsipersist in f, otherwise you would lock yourself and everybody else\! Be VERY cautious.
+
+
+---
+
+# Module `Ocsipersist.Ref`
+
+Simple interface for persistent references. Relies on `Stdlib.Marshal` for (de)serialisation, which entails the same limitations as for the [`Polymorphic`](./Ocsipersist-Polymorphic.md) frontend. If this is an issue you can rely on [`Functorial`](./Ocsipersist-Functorial.md) frontend instead (see [`TABLE.Variable`](./../ocsipersist-lib/Ocsipersist_lib-Sigs-module-type-TABLE-Variable.md)).
+
+Persistent references for OCaml
+
+```ocaml
+type 'a t
+```
+The type of (persistent or not) references
+
+```ocaml
+val ref : ?persistent:string -> 'a -> 'a t
+```
+`ref ?persistent default` creates a reference. If optional parameter `?persistent` is absent, the reference will not be persistent (implemented using OCaml references). Otherwise, the value of `persistent` will be used as key for the value in the persistent reference table. If the reference already exists, the current value is kept. Be careful to change this name every time you change the type of the value.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+Get the value of a reference
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+Set the value of a reference
+
+
+---
+
+# Module `Ocsipersist.Ref_json`
+
+Type-safe persistent references using `Deriving_Json` for serialisation. Unlike [`Ref`](./Ocsipersist-Ref.md), this does not rely on `Stdlib.Marshal` and is safe across OCaml versions. Requires types annotated with `[@@deriving json]` (from `js_of_ocaml-ppx_deriving_json`).
+
+Type-safe persistent references using `Deriving_Json` for serialisation.
+
+```ocaml
+type 'a t
+```
+The type of (persistent or not) references
+
+```ocaml
+val ref : ?persistent:string -> 'a Deriving_Json.t -> 'a -> 'a t
+```
+`ref ?persistent json default` creates a reference. If optional parameter `?persistent` is absent, the reference will not be persistent (implemented using OCaml references). Otherwise, the value of `persistent` will be used as key for the value in the persistent reference table. If the reference already exists, the current value is kept.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+Get the value of a reference
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+Set the value of a reference
+
+
+---
+
+# Module `Ocsipersist.Store`
+
+The variable store allows for the persistent storage of individual variables. Relies on `Stdlib.Marshal` for (de)serialisation, which entails the same limitations as for the [`Polymorphic`](./Ocsipersist-Polymorphic.md) frontend. If this is an issue you can rely on [`Functorial`](./Ocsipersist-Functorial.md) frontend instead (see [`TABLE.Variable`](./../ocsipersist-lib/Ocsipersist_lib-Sigs-module-type-TABLE-Variable.md)).
+
+```ocaml
+type 'a t
+```
+Type of persistent data
+
+```ocaml
+type store
+```
+Data are divided into stores. Create one store for your project, where you will save all your data.
+
+```ocaml
+val open_store : string -> store Lwt.t
+```
+Open a store (and create it if it does not exist)
+
+```ocaml
+val make_persistent : store:store -> name:string -> default:'a -> 'a t Lwt.t
+```
+`make_persistent store name default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist.
+
+```ocaml
+val make_persistent_lazy : 
+  store:store ->
+  name:string ->
+  default:(unit -> 'a) ->
+  'a t Lwt.t
+```
+Same as make\_persistent but the default value is evaluated only if needed
+
+```ocaml
+val make_persistent_lazy_lwt : 
+  store:store ->
+  name:string ->
+  default:(unit -> 'a Lwt.t) ->
+  'a t Lwt.t
+```
+Lwt version of make\_persistent\_lazy.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+`get pv` gives the value of `pv`
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+`set pv value` sets a persistent value `pv` to `value`
+
+
+---
+
+# Module `Ocsipersist.Store_json`
+
+Type-safe variable store using `Deriving_Json` for serialisation. Unlike [`Store`](./Ocsipersist-Store.md), this does not rely on `Stdlib.Marshal` and is safe across OCaml versions. Requires types annotated with `[@@deriving json]` (from `js_of_ocaml-ppx_deriving_json`).
+
+Note: The dependency on `js_of_ocaml` is only for the `Deriving_Json` runtime library, which provides type-safe JSON serialisation. This is the same serialisation mechanism used by Eliom for client-server communication. No JavaScript compilation is involved.
+
+```ocaml
+type 'a t
+```
+Type of persistent data
+
+```ocaml
+type store
+```
+Data are divided into stores. Create one store for your project, where you will save all your data.
+
+```ocaml
+val open_store : string -> store Lwt.t
+```
+Open a store (and create it if it does not exist)
+
+```ocaml
+val make_persistent : 
+  store:store ->
+  name:string ->
+  json:'a Deriving_Json.t ->
+  default:'a ->
+  'a t Lwt.t
+```
+`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation.
+
+```ocaml
+val make_persistent_lazy : 
+  store:store ->
+  name:string ->
+  json:'a Deriving_Json.t ->
+  default:(unit -> 'a) ->
+  'a t Lwt.t
+```
+Same as make\_persistent but the default value is evaluated only if needed
+
+```ocaml
+val make_persistent_lazy_lwt : 
+  store:store ->
+  name:string ->
+  json:'a Deriving_Json.t ->
+  default:(unit -> 'a Lwt.t) ->
+  'a t Lwt.t
+```
+Lwt version of make\_persistent\_lazy.
+
+```ocaml
+val get : 'a t -> 'a Lwt.t
+```
+`get pv` gives the value of `pv`
+
+```ocaml
+val set : 'a t -> 'a -> unit Lwt.t
+```
+`set pv value` sets a persistent value `pv` to `value`
