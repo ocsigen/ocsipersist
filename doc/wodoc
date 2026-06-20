@@ -4,7 +4,8 @@
 ;;               --label <v> --menu <shared menu.html> [--latest]
 (project ocsipersist)
 (title Ocsipersist)
-(pub /ocsipersist)
+(url-prefix /ocsipersist)
+(css /css/style.css /css/ocsigen-odoc.css)  ; shared Ocsigen theme (wodoc css default changed)
 (profile release)                       ; dune build @doc --profile release
 (landing ocsipersist/index.html)
 ;; no (highlight …): Ocsipersist has no ppx, so wodoc's default starter is enough.
