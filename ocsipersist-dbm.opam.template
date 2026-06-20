@@ -1,1 +1,1 @@
-available: [os != "macos"]
+available: os != "macos" & os != "win32"
