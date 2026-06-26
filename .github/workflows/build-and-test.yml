@@ -36,6 +36,10 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
+      # Ocsipersist targets the Ocsigen Server 8 API (wrapped module names),
+      # which is only available from the master pin until 8.0 is released.
+      - run: opam pin -yn git+https://github.com/ocsigen/ocsigenserver#master
+
       - name: Install dependencies
         run: opam install . --deps-only --with-test
 
