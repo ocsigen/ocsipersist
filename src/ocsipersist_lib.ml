@@ -271,7 +271,11 @@ module Sigs = struct
     (** [make_persistent ~store ~name ~json ~default] find a persistent value
         named [name] in store [store]
         from database, or create it with the default value [default] if it
-        does not exist. Uses {!Deriving_Json} for type-safe serialisation. *)
+        does not exist. Uses {!Deriving_Json} for type-safe serialisation.
+        An existing value that cannot be deserialised with [json] is left in
+        place: reading it with {!get} then fails with
+        [Ocsipersist_lib.Decoding_error], and the caller decides whether to
+        overwrite it with {!set}. *)
 
     val make_persistent_lazy :
        store:store
@@ -461,7 +465,13 @@ module Store_json (Functorial : FUNCTORIAL) : STORE_JSON = struct
     Lwt.catch
       (fun () -> find () >>= fun _ -> Lwt.return ())
       (function
-        | Not_found -> default () >>= fun def -> add def | e -> Lwt.fail e)
+        | Not_found -> default () >>= fun def -> add def
+        | Decoding_error _ ->
+            (* An existing value that cannot be decoded is left in place:
+               deciding whether to overwrite or report it belongs to the
+               caller, on [get]. *)
+            Lwt.return ()
+        | e -> Lwt.fail e)
     >>= fun () -> Lwt.return {find; add}
 
   let make_persistent_lazy ~store ~name ~json ~default =
