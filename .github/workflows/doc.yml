@@ -51,7 +51,10 @@ jobs:
 
       - name: Install dependencies
         if: steps.switch-cache.outputs.cache-hit != 'true'
+        # ocsigenserver 8.0.0 is released on GitHub but not yet published on
+        # opam (ocaml/opam-repository#30806): pin the release tag until then.
         run: |
+          opam pin -yn git+https://github.com/ocsigen/ocsigenserver#8.0.0
           opam install . --deps-only --with-doc
           opam pin add -n wodoc https://github.com/ocsigen/wodoc.git
           opam install wodoc odoc
