@@ -197,6 +197,11 @@ type store = Store.store
 type 'a variable = 'a Store.t
 ```
 ```ocaml
+exception Decoding_error of string
+```
+Raised by the JSON frontends ([`Ref_json`](./Ocsipersist-Ref_json.md), [`Store_json`](./Ocsipersist-Store_json.md) and [`Functorial.Column.Json`](./Ocsipersist-Functorial-Column-Json.md)) when a stored value cannot be deserialised by the codec it was opened with (the type changed, or the stored data is corrupted). The argument is the decoder's error message. Backend errors are not reported through this exception, so callers can safely treat it as "the stored value is unreadable".
+
+```ocaml
 module Ref_json : Ocsipersist_lib.Sigs.REF_JSON
 ```
 Type-safe persistent references using `Deriving_Json` for serialisation. Unlike [`Ref`](./Ocsipersist-Ref.md), this does not rely on `Stdlib.Marshal` and is safe across OCaml versions. Requires types annotated with `[@@deriving json]` (from `js_of_ocaml-ppx_deriving_json`).
@@ -220,6 +225,16 @@ This modules provides tools for creating more implementations of the `Ocsipersis
 ```ocaml
 module Sigs : sig ... end
 ```
+```ocaml
+exception Decoding_error of string
+```
+Raised by the JSON frontends when a value read from the backend cannot be deserialised by the codec it was opened with (the type changed, or the stored data is corrupted). The argument is the decoder's error message.
+
+```ocaml
+val decode_json : 'a Deriving_Json.t -> string -> 'a
+```
+Decode a JSON value stored in a backend, turning the decoder's `Failure` into [`Decoding_error`](./#exception-Decoding_error) so that callers can distinguish an unreadable value from a backend error.
+
 ```ocaml
 val is_valid_name_char : char -> bool
 ```
@@ -1733,7 +1748,7 @@ val make_persistent :
   default:'a ->
   'a t Lwt.t
 ```
-`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation.
+`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation. An existing value that cannot be deserialised with `json` is left in place: reading it with [`get`](./#val-get) then fails with `Ocsipersist_lib.Decoding_error`, and the caller decides whether to overwrite it with [`set`](./#val-set).
 
 ```ocaml
 val make_persistent_lazy : 
@@ -1758,7 +1773,7 @@ Lwt version of make\_persistent\_lazy.
 ```ocaml
 val get : 'a t -> 'a Lwt.t
 ```
-`get pv` gives the value of `pv`
+`get pv` gives the value of `pv`. Fails with `Ocsipersist_lib.Decoding_error` if the stored value cannot be deserialised by the codec `pv` was opened with.
 
 ```ocaml
 val set : 'a t -> 'a -> unit Lwt.t
@@ -2260,7 +2275,7 @@ val make_persistent :
   default:'a ->
   'a t Lwt.t
 ```
-`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation.
+`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation. An existing value that cannot be deserialised with `json` is left in place: reading it with [`get`](./#val-get) then fails with `Ocsipersist_lib.Decoding_error`, and the caller decides whether to overwrite it with [`set`](./#val-set).
 
 ```ocaml
 val make_persistent_lazy : 
@@ -2285,7 +2300,7 @@ Lwt version of make\_persistent\_lazy.
 ```ocaml
 val get : 'a t -> 'a Lwt.t
 ```
-`get pv` gives the value of `pv`
+`get pv` gives the value of `pv`. Fails with `Ocsipersist_lib.Decoding_error` if the stored value cannot be deserialised by the codec `pv` was opened with.
 
 ```ocaml
 val set : 'a t -> 'a -> unit Lwt.t
@@ -2925,7 +2940,7 @@ val make_persistent :
   default:'a ->
   'a t Lwt.t
 ```
-`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation.
+`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation. An existing value that cannot be deserialised with `json` is left in place: reading it with [`get`](./#val-get) then fails with `Ocsipersist_lib.Decoding_error`, and the caller decides whether to overwrite it with [`set`](./#val-set).
 
 ```ocaml
 val make_persistent_lazy : 
@@ -2950,7 +2965,7 @@ Lwt version of make\_persistent\_lazy.
 ```ocaml
 val get : 'a t -> 'a Lwt.t
 ```
-`get pv` gives the value of `pv`
+`get pv` gives the value of `pv`. Fails with `Ocsipersist_lib.Decoding_error` if the stored value cannot be deserialised by the codec `pv` was opened with.
 
 ```ocaml
 val set : 'a t -> 'a -> unit Lwt.t

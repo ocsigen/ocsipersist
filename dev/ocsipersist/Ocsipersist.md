@@ -63,6 +63,11 @@ type store = Store.store
 type 'a variable = 'a Store.t
 ```
 ```ocaml
+exception Decoding_error of string
+```
+Raised by the JSON frontends ([`Ref_json`](./Ocsipersist-Ref_json.md), [`Store_json`](./Ocsipersist-Store_json.md) and [`Functorial.Column.Json`](./Ocsipersist-Functorial-Column-Json.md)) when a stored value cannot be deserialised by the codec it was opened with (the type changed, or the stored data is corrupted). The argument is the decoder's error message. Backend errors are not reported through this exception, so callers can safely treat it as "the stored value is unreadable".
+
+```ocaml
 module Ref_json : Ocsipersist_lib.Sigs.REF_JSON
 ```
 Type-safe persistent references using `Deriving_Json` for serialisation. Unlike [`Ref`](./Ocsipersist-Ref.md), this does not rely on `Stdlib.Marshal` and is safe across OCaml versions. Requires types annotated with `[@@deriving json]` (from `js_of_ocaml-ppx_deriving_json`).

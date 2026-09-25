@@ -27,7 +27,7 @@ val make_persistent :
   default:'a ->
   'a t Lwt.t
 ```
-`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation.
+`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation. An existing value that cannot be deserialised with `json` is left in place: reading it with [`get`](./#val-get) then fails with `Ocsipersist_lib.Decoding_error`, and the caller decides whether to overwrite it with [`set`](./#val-set).
 
 ```ocaml
 val make_persistent_lazy : 
@@ -52,7 +52,7 @@ Lwt version of make\_persistent\_lazy.
 ```ocaml
 val get : 'a t -> 'a Lwt.t
 ```
-`get pv` gives the value of `pv`
+`get pv` gives the value of `pv`. Fails with `Ocsipersist_lib.Decoding_error` if the stored value cannot be deserialised by the codec `pv` was opened with.
 
 ```ocaml
 val set : 'a t -> 'a -> unit Lwt.t

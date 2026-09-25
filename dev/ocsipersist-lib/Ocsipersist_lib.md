@@ -6,6 +6,16 @@ This modules provides tools for creating more implementations of the `Ocsipersis
 module Sigs : sig ... end
 ```
 ```ocaml
+exception Decoding_error of string
+```
+Raised by the JSON frontends when a value read from the backend cannot be deserialised by the codec it was opened with (the type changed, or the stored data is corrupted). The argument is the decoder's error message.
+
+```ocaml
+val decode_json : 'a Deriving_Json.t -> string -> 'a
+```
+Decode a JSON value stored in a backend, turning the decoder's `Failure` into [`Decoding_error`](./#exception-Decoding_error) so that callers can distinguish an unreadable value from a backend error.
+
+```ocaml
 val is_valid_name_char : char -> bool
 ```
 ```ocaml
