@@ -1,4 +1,3 @@
-
 # Module `Ocsipersist_config`
 
 If you are using the PostgreSQL backend of Ocsipersist with Ocsigen Server with a configuration file, install package `ocsipersist-pgsql-config` and use the following configuration tags. All attributes of the `database` tag are optional.

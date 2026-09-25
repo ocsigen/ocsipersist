@@ -1,4 +1,3 @@
-
 # Module type `Sigs.REF_JSON`
 
 Type-safe persistent references using `Deriving_Json` for serialisation.

@@ -1,4 +1,3 @@
-
 # Parameter `Polymorphic.Functorial`
 
 ```ocaml

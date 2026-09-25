@@ -1,4 +1,3 @@
-
 # Module type `Sigs.REF`
 
 Persistent references for OCaml

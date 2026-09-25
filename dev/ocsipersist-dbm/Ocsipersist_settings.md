@@ -1,4 +1,3 @@
-
 # Module `Ocsipersist_settings`
 
 ```ocaml

@@ -1,4 +1,3 @@
-
 # Module type `Sigs.TABLE`
 
 ```ocaml

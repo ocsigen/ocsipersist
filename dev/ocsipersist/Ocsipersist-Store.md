@@ -1,4 +1,3 @@
-
 # Module `Ocsipersist.Store`
 
 The variable store allows for the persistent storage of individual variables. Relies on `Stdlib.Marshal` for (de)serialisation, which entails the same limitations as for the [`Polymorphic`](./Ocsipersist-Polymorphic.md) frontend. If this is an issue you can rely on [`Functorial`](./Ocsipersist-Functorial.md) frontend instead (see [`TABLE.Variable`](./../ocsipersist-lib/Ocsipersist_lib-Sigs-module-type-TABLE-Variable.md)).

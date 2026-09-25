@@ -1,4 +1,3 @@
-
 # Parameter `Store_json.Functorial`
 
 ```ocaml

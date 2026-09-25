@@ -1,4 +1,3 @@
-
 # Parameter `Ref_json.Functorial`
 
 ```ocaml

@@ -16,7 +16,6 @@ Three backends currently exist:
 - [PostgreSQL](../ocsipersist-pgsql/index.html)
 You choose a backend by installing the corresponding package (`ocsipersist-sqlite`, `ocsipersist-dbm` or `ocsipersist-pgsql`); the unified frontend is the same in every case.
 
-
 ## API reference
 
 The storage frontend is documented in module [`Ocsipersist`](./Ocsipersist.md). It defines several interfaces:
@@ -26,7 +25,6 @@ The storage frontend is documented in module [`Ocsipersist`](./Ocsipersist.md). 
 - `Polymorphic` — a polymorphic table (using `Marshal`);
 - `Functorial` — a type-safe table built from a value description.
 See [`Ocsipersist`](./Ocsipersist.md) for the full frontend, and [`Ocsipersist_lib`](./../ocsipersist-lib/Ocsipersist_lib.md) for the backend-independent signatures and functors shared by every backend.
-
 
 ## Backends and configuration
 
@@ -43,11 +41,9 @@ Each backend ships an `Ocsipersist_settings` library to configure storage from O
 
 SQLite backend for Ocsipersist. For the API documentation see OPAM package [ocsipersist](../ocsipersist/Ocsipersist/index.html). This page describes how to configure the SQLite backend.
 
-
 ## Using as a library
 
 If you are not using Ocsigen Server's configuration file, add library `ocsipersist-sqlite.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file.
-
 
 ## Using with Ocsigen Server: ocsipersist-sqlite-config
 
@@ -60,11 +56,9 @@ If you want to configure Ocsipersist-sqlite from Ocsigen Server's configuration 
 
 DBM backend for Ocsipersist. For the API documentation see OPAM package [ocsipersist](../ocsipersist/Ocsipersist/index.html). This page describes how to configure the DBM backend. The DBM backend uses a server process `ocsidbm`.
 
-
 ## Using as a library
 
 If you are not using Ocsigen Server's configuration file, add library `ocsipersist-dbm.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file.
-
 
 ## Using with Ocsigen Server: ocsipersist-dbm-config
 
@@ -77,11 +71,9 @@ If you want to configure Ocsipersist-dbm from Ocsigen Server's configuration fil
 
 PostgreSQL backend for Ocsipersist. For the API documentation see OPAM package [ocsipersist](../ocsipersist/Ocsipersist/index.html). This page describes how to configure the PostgreSQL backend.
 
-
 ## Using as a library
 
 If you are not using Ocsigen Server's configuration file, add library `ocsipersist-pgsql.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file.
-
 
 ## Using with Ocsigen Server: ocsipersist-pgsql-config
 
@@ -106,7 +98,6 @@ If you want to configure Ocsipersist-pgsql from Ocsigen Server's configuration f
 
 # ocsipersist-dbm-config index
 
-
 ## Library ocsipersist-dbm-config
 
 The entry point of this library is the module: [`Ocsipersist_config`](./Ocsipersist_config.md).
@@ -115,7 +106,6 @@ The entry point of this library is the module: [`Ocsipersist_config`](./Ocsipers
 ---
 
 # ocsipersist-lib index
-
 
 ## Library ocsipersist-lib
 
@@ -126,7 +116,6 @@ The entry point of this library is the module: [`Ocsipersist_lib`](./Ocsipersist
 
 # ocsipersist-pgsql-config index
 
-
 ## Library ocsipersist-pgsql-config
 
 The entry point of this library is the module: [`Ocsipersist_config`](./Ocsipersist_config.md).
@@ -135,7 +124,6 @@ The entry point of this library is the module: [`Ocsipersist_config`](./Ocsipers
 ---
 
 # ocsipersist-sqlite-config index
-
 
 ## Library ocsipersist-sqlite-config
 
@@ -399,7 +387,6 @@ val t : t Deriving_Json.t
 
 # Module `Column.Json`
 
-
 ## Parameters
 
 ```ocaml
@@ -434,7 +421,6 @@ type t
 ---
 
 # Module `Column.Marshal`
-
 
 ## Parameters
 
@@ -566,7 +552,6 @@ val decode : internal -> t
 ---
 
 # Module `Functorial.Table`
-
 
 ## Parameters
 
@@ -701,7 +686,6 @@ module Column : sig ... end
 
 deriving polymorphic interface from the functorial one
 
-
 ## Parameters
 
 ```ocaml
@@ -831,7 +815,6 @@ val set : 'a t -> 'a -> unit Lwt.t
 
 # Module `Ocsipersist_lib.Ref`
 
-
 ## Parameters
 
 ```ocaml
@@ -893,7 +876,6 @@ val t : t Deriving_Json.t
 
 # Module `Column.Json`
 
-
 ## Parameters
 
 ```ocaml
@@ -928,7 +910,6 @@ type t
 ---
 
 # Module `Column.Marshal`
-
 
 ## Parameters
 
@@ -1060,7 +1041,6 @@ val decode : internal -> t
 ---
 
 # Module `Functorial.Table`
-
 
 ## Parameters
 
@@ -1195,7 +1175,6 @@ module Column : sig ... end
 
 Type-safe persistent references using `Deriving_Json` for serialisation.
 
-
 ## Parameters
 
 ```ocaml
@@ -1259,7 +1238,6 @@ val t : t Deriving_Json.t
 
 # Module `Column.Json`
 
-
 ## Parameters
 
 ```ocaml
@@ -1294,7 +1272,6 @@ type t
 ---
 
 # Module `Column.Marshal`
-
 
 ## Parameters
 
@@ -1426,7 +1403,6 @@ val decode : internal -> t
 ---
 
 # Module `FUNCTORIAL.Table`
-
 
 ## Parameters
 
@@ -1956,7 +1932,6 @@ val t : t Deriving_Json.t
 
 # Module `Column.Json`
 
-
 ## Parameters
 
 ```ocaml
@@ -1991,7 +1966,6 @@ type t
 ---
 
 # Module `Column.Marshal`
-
 
 ## Parameters
 
@@ -2123,7 +2097,6 @@ val decode : internal -> t
 ---
 
 # Module `Functorial.Table`
-
 
 ## Parameters
 
@@ -2256,7 +2229,6 @@ module Column : sig ... end
 
 # Module `Ocsipersist_lib.Store_json`
 
-
 ## Parameters
 
 ```ocaml
@@ -2342,7 +2314,6 @@ val add : k -> v -> unit Lwt.t
 ---
 
 # Module `Ocsipersist_lib.Variable`
-
 
 ## Parameters
 
@@ -2445,7 +2416,6 @@ val t : t Deriving_Json.t
 
 # Module `Column.Json`
 
-
 ## Parameters
 
 ```ocaml
@@ -2480,7 +2450,6 @@ type t
 ---
 
 # Module `Column.Marshal`
-
 
 ## Parameters
 
@@ -2612,7 +2581,6 @@ val decode : internal -> t
 ---
 
 # Module `Functorial.Table`
-
 
 ## Parameters
 

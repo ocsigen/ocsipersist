@@ -1,8 +1,6 @@
-
 # Module `Ocsipersist_lib.Ref_json`
 
 Type-safe persistent references using `Deriving_Json` for serialisation.
-
 
 ## Parameters
 

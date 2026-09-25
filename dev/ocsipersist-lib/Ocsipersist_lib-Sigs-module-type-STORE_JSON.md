@@ -1,4 +1,3 @@
-
 # Module type `Sigs.STORE_JSON`
 
 ```ocaml

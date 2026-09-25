@@ -1,4 +1,3 @@
-
 # Module `Ocsipersist_lib`
 
 This modules provides tools for creating more implementations of the `Ocsipersist` virtual module.

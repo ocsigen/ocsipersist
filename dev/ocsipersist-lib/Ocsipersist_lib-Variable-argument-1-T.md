@@ -1,4 +1,3 @@
-
 # Parameter `Variable.T`
 
 ```ocaml

@@ -1,8 +1,6 @@
-
 # Module `Ocsipersist_lib.Polymorphic`
 
 deriving polymorphic interface from the functorial one
-
 
 ## Parameters
 

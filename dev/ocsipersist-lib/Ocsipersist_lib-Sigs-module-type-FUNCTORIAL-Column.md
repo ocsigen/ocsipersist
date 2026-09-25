@@ -1,4 +1,3 @@
-
 # Module `FUNCTORIAL.Column`
 
 ```ocaml

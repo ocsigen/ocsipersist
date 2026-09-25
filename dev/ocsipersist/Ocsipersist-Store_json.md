@@ -1,4 +1,3 @@
-
 # Module `Ocsipersist.Store_json`
 
 Type-safe variable store using `Deriving_Json` for serialisation. Unlike [`Store`](./Ocsipersist-Store.md), this does not rely on `Stdlib.Marshal` and is safe across OCaml versions. Requires types annotated with `[@@deriving json]` (from `js_of_ocaml-ppx_deriving_json`).

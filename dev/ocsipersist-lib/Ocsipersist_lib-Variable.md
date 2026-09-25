@@ -1,6 +1,4 @@
-
 # Module `Ocsipersist_lib.Variable`
-
 
 ## Parameters
 

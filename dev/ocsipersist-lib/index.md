@@ -1,6 +1,4 @@
-
 # ocsipersist-lib index
-
 
 ## Library ocsipersist-lib
 

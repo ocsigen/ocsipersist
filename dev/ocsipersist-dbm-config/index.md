@@ -1,6 +1,4 @@
-
 # ocsipersist-dbm-config index
-
 
 ## Library ocsipersist-dbm-config
 

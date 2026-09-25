@@ -1,6 +1,4 @@
-
 # ocsipersist-pgsql-config index
-
 
 ## Library ocsipersist-pgsql-config
 

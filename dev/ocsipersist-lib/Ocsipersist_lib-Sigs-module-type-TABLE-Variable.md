@@ -1,4 +1,3 @@
-
 # Module `TABLE.Variable`
 
 ```ocaml

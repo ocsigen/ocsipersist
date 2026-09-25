@@ -1,4 +1,3 @@
-
 # Ocsipersist
 
 Ocsipersist is a collection of libraries defining a unified frontend for a number of key/value storage implementations. It is used pervasively in Ocsigen/Eliom to handle sessions and persistent references, but can be used as a standalone library or as an extension for Ocsigen Server.
@@ -10,7 +9,6 @@ Three backends currently exist:
 - [PostgreSQL](../ocsipersist-pgsql/index.html)
 You choose a backend by installing the corresponding package (`ocsipersist-sqlite`, `ocsipersist-dbm` or `ocsipersist-pgsql`); the unified frontend is the same in every case.
 
-
 ## API reference
 
 The storage frontend is documented in module [`Ocsipersist`](./Ocsipersist.md). It defines several interfaces:
@@ -20,7 +18,6 @@ The storage frontend is documented in module [`Ocsipersist`](./Ocsipersist.md). 
 - `Polymorphic` — a polymorphic table (using `Marshal`);
 - `Functorial` — a type-safe table built from a value description.
 See [`Ocsipersist`](./Ocsipersist.md) for the full frontend, and [`Ocsipersist_lib`](./../ocsipersist-lib/Ocsipersist_lib.md) for the backend-independent signatures and functors shared by every backend.
-
 
 ## Backends and configuration
 

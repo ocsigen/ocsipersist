@@ -1,6 +1,4 @@
-
 # ocsipersist-sqlite-config index
-
 
 ## Library ocsipersist-sqlite-config
 

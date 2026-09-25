@@ -1,4 +1,3 @@
-
 # Module type `FUNCTORIAL.COLUMN`
 
 ```ocaml

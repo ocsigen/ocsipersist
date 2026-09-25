@@ -1,4 +1,3 @@
-
 # Module `Ocsipersist_lib.Sigs`
 
 ```ocaml
