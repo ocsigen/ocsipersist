@@ -291,7 +291,9 @@ module Sigs = struct
     (** Lwt version of make_persistent_lazy. *)
 
     val get : 'a t -> 'a Lwt.t
-    (** [get pv] gives the value of [pv] *)
+    (** [get pv] gives the value of [pv]. Fails with
+        [Ocsipersist_lib.Decoding_error] if the stored value cannot be
+        deserialised by the codec [pv] was opened with. *)
 
     val set : 'a t -> 'a -> unit Lwt.t
     (** [set pv value] sets a persistent value [pv] to [value] *)
@@ -300,6 +302,18 @@ end
 
 open Sigs
 open Lwt.Infix
+
+exception Decoding_error of string
+(** Raised by the JSON frontends when a value read from the backend cannot be
+    deserialised by the codec it was opened with (the type changed, or the
+    stored data is corrupted). The argument is the decoder's error message. *)
+
+(** Decode a JSON value stored in a backend, turning the decoder's [Failure]
+    into {!Decoding_error} so that callers can distinguish an unreadable value
+    from a backend error. *)
+let decode_json json s =
+  try Deriving_Json.from_string json s
+  with Failure msg -> raise (Decoding_error msg)
 
 let is_valid_name_char = function
   | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
