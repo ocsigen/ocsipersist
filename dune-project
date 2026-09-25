@@ -41,7 +41,7 @@
  (maintenance_intent "(latest)")
  (depends
   (ocsipersist-dbm (= :version))
-  (ocsigenserver (>= 3.0.0))
+  (ocsigenserver (and (>= 8.0.0) (< 9.0.0)))
   xml-light))
 
 (package
@@ -72,7 +72,7 @@
  (maintenance_intent "(latest)")
  (depends
   (ocsipersist-pgsql (= :version))
-  (ocsigenserver (>= 3.0.0))
+  (ocsigenserver (and (>= 8.0.0) (< 9.0.0)))
   xml-light))
 
 (package
@@ -94,5 +94,5 @@
  (maintenance_intent "(latest)")
  (depends
   (ocsipersist-sqlite (= :version))
-  (ocsigenserver (>= 3.0.0))
+  (ocsigenserver (and (>= 8.0.0) (< 9.0.0)))
   xml-light))

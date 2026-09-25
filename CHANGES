@@ -1,3 +1,16 @@
+## 3.0.0 (2026-09-25)
+
+Breaking changes:
+* Adapt the Ocsigen Server configuration-file extensions
+  (`ocsipersist-*-config`) to the module names introduced in Ocsigen Server 8
+  (`Ocsigen.Extensions`, `Ocsigen.Config`, `Ocsigen.Messages`). These packages
+  now require `ocsigenserver >= 8.0.0 & < 9.0.0`.
+
+Packaging:
+* `ocsipersist-dbm` and `ocsipersist-dbm-config` are now marked as unavailable
+  on Windows and macOS: the DBM backend relies on a separate `ocsidbm` process,
+  Unix-domain sockets and gdbm/ndbm.
+
 ## 2.1.0 (2026-06-13)
 
 New features:
