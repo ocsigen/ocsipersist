@@ -11,7 +11,7 @@ bug-reports: "https://github.com/ocsigen/ocsipersist/issues"
 depends: [
   "dune" {>= "3.18"}
   "ocsipersist-dbm" {= version}
-  "ocsigenserver" {>= "8.0.0"}
+  "ocsigenserver" {>= "8.0.0" & < "9.0.0"}
   "xml-light"
   "odoc" {with-doc}
 ]
