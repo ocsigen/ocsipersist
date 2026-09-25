@@ -1,13 +1,23 @@
 (executable
  (name test)
+ (modules test)
  (libraries ocsipersist ocsipersist-sqlite))
 
 (executable
  (name test_functorial)
+ (modules test_functorial)
  (libraries ocsipersist ocsipersist-sqlite))
 
 (executable
  (name test_json)
+ (modules test_json)
+ (libraries ocsipersist ocsipersist-sqlite js_of_ocaml.deriving)
+ (preprocess
+  (pps js_of_ocaml-ppx_deriving_json)))
+
+(executable
+ (name test_decoding_error)
+ (modules test_decoding_error)
  (libraries ocsipersist ocsipersist-sqlite js_of_ocaml.deriving)
  (preprocess
   (pps js_of_ocaml-ppx_deriving_json)))

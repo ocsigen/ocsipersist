@@ -5,6 +5,8 @@ open Lwt.Infix
 
 module type TABLE = Ocsipersist_lib.Sigs.TABLE
 
+exception Decoding_error = Ocsipersist_lib.Decoding_error
+
 let section = Logs.Src.create "ocsigen:ocsipersist:dbm"
 
 exception Ocsipersist_error
@@ -297,7 +299,7 @@ module Functorial = struct
 
       let column_type = "_"
       let encode v = Deriving_Json.to_string C.t v
-      let decode v = Deriving_Json.from_string C.t v
+      let decode v = Ocsipersist_lib.decode_json C.t v
     end
   end
 end

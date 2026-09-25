@@ -65,6 +65,14 @@ module Store : Ocsipersist_lib.Sigs.STORE
 type store = Store.store
 type 'a variable = 'a Store.t
 
+exception Decoding_error of string
+(** Raised by the JSON frontends ({!Ref_json}, {!Store_json} and
+    {!Functorial.Column.Json}) when a stored value cannot be deserialised by
+    the codec it was opened with (the type changed, or the stored data is
+    corrupted). The argument is the decoder's error message. Backend errors
+    are not reported through this exception, so callers can safely treat it
+    as "the stored value is unreadable". *)
+
 module Ref_json : Ocsipersist_lib.Sigs.REF_JSON
 (** Type-safe persistent references using {!Deriving_Json} for
     serialisation. Unlike {!Ref}, this does not rely on {!Stdlib.Marshal}

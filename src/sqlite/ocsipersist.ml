@@ -1,5 +1,7 @@
 module type TABLE = Ocsipersist_lib.Sigs.TABLE
 
+exception Decoding_error = Ocsipersist_lib.Decoding_error
+
 let section = Logs.Src.create "ocsigen:ocsipersist:sqlite"
 
 open Lwt.Infix
@@ -445,7 +447,7 @@ module Functorial = struct
       let encode v = Data.TEXT (Deriving_Json.to_string C.t v)
 
       let decode = function
-        | Data.TEXT s -> Deriving_Json.from_string C.t s
+        | Data.TEXT s -> Ocsipersist_lib.decode_json C.t s
         | _ -> assert false
     end
   end

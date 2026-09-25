@@ -26,3 +26,11 @@ Test JSON serialisation (Ref_json, Store_json, Column.Json):
   store_json: name=Alice, age=31
   store_json after update: name=Alice, age=32
   functorial_json: name=Bob, age=25
+
+An unreadable stored value (type changed) does not break make_persistent;
+get reports it with Decoding_error and set can overwrite it:
+
+  $ dune exec -- ./test_decoding_error.exe
+  make_persistent: ok
+  get: Decoding_error
+  after set: name=Carol, age=1

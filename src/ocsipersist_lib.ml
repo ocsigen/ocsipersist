@@ -271,7 +271,11 @@ module Sigs = struct
     (** [make_persistent ~store ~name ~json ~default] find a persistent value
         named [name] in store [store]
         from database, or create it with the default value [default] if it
-        does not exist. Uses {!Deriving_Json} for type-safe serialisation. *)
+        does not exist. Uses {!Deriving_Json} for type-safe serialisation.
+        An existing value that cannot be deserialised with [json] is left in
+        place: reading it with {!get} then fails with
+        [Ocsipersist_lib.Decoding_error], and the caller decides whether to
+        overwrite it with {!set}. *)
 
     val make_persistent_lazy :
        store:store
@@ -291,7 +295,9 @@ module Sigs = struct
     (** Lwt version of make_persistent_lazy. *)
 
     val get : 'a t -> 'a Lwt.t
-    (** [get pv] gives the value of [pv] *)
+    (** [get pv] gives the value of [pv]. Fails with
+        [Ocsipersist_lib.Decoding_error] if the stored value cannot be
+        deserialised by the codec [pv] was opened with. *)
 
     val set : 'a t -> 'a -> unit Lwt.t
     (** [set pv value] sets a persistent value [pv] to [value] *)
@@ -300,6 +306,18 @@ end
 
 open Sigs
 open Lwt.Infix
+
+exception Decoding_error of string
+(** Raised by the JSON frontends when a value read from the backend cannot be
+    deserialised by the codec it was opened with (the type changed, or the
+    stored data is corrupted). The argument is the decoder's error message. *)
+
+(** Decode a JSON value stored in a backend, turning the decoder's [Failure]
+    into {!Decoding_error} so that callers can distinguish an unreadable value
+    from a backend error. *)
+let decode_json json s =
+  try Deriving_Json.from_string json s
+  with Failure msg -> raise (Decoding_error msg)
 
 let is_valid_name_char = function
   | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
@@ -447,7 +465,13 @@ module Store_json (Functorial : FUNCTORIAL) : STORE_JSON = struct
     Lwt.catch
       (fun () -> find () >>= fun _ -> Lwt.return ())
       (function
-        | Not_found -> default () >>= fun def -> add def | e -> Lwt.fail e)
+        | Not_found -> default () >>= fun def -> add def
+        | Decoding_error _ ->
+            (* An existing value that cannot be decoded is left in place:
+               deciding whether to overwrite or report it belongs to the
+               caller, on [get]. *)
+            Lwt.return ()
+        | e -> Lwt.fail e)
     >>= fun () -> Lwt.return {find; add}
 
   let make_persistent_lazy ~store ~name ~json ~default =
