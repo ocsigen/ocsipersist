@@ -1,4 +1,4 @@
-## 3.1.0 (unreleased)
+## 3.1.0 (2026-09-25)
 
 New features:
 * New exception `Decoding_error`, raised by the JSON frontends (`Ref_json`,
