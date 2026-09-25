@@ -1,3 +1,18 @@
+## 3.1.0 (unreleased)
+
+New features:
+* New exception `Decoding_error`, raised by the JSON frontends (`Ref_json`,
+  `Store_json`, `Column.Json`) when a stored value cannot be deserialised by
+  the codec it was opened with. Backend errors keep their own exceptions, so
+  callers can now distinguish an unreadable value from a database failure.
+
+Bug fixes:
+* `Store_json.make_persistent` (and its lazy variants) no longer fails when
+  the existing stored value cannot be deserialised. The value is left in
+  place; `get` reports it with `Decoding_error` and the caller can overwrite
+  it with `set`. Previously such a value made `make_persistent` fail with no
+  way to recover, since overwriting requires the handle it failed to return.
+
 ## 3.0.0 (2026-09-25)
 
 Breaking changes:
