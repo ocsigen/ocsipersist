@@ -1,4 +1,4 @@
-## 3.1.1 (unreleased)
+## 3.1.1 (2026-09-26)
 
 Packaging:
 * Require lwt >= 5.7.0: ocsipersist-lib uses `Lwt.reraise` since 2.1.0.
