@@ -2,7 +2,7 @@ Test Functorial iter_batch with DBM backend and ocsidbm process.
 
 Set up environment:
 
-  $ export OCSIDBM=$(which ocsidbm)
+  $ export OCSIDBM=$(command -v ocsidbm)
   $ export OCSIPERSIST_STORE=$(mktemp -d)
 
 Run the test:
