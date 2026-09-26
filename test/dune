@@ -5,10 +5,16 @@
   (deps
    (package ocsipersist-sqlite))))
 
+; The PostgreSQL test starts a local server with initdb and pg_ctl, which is
+; not available everywhere the tests run (opam-repository's CI only has the
+; client libraries). It is opt-in: set OCSIPERSIST_TEST_PGSQL=true to run it.
+
 (subdir
  pgsql
  (cram
   (package ocsipersist-pgsql)
+  (enabled_if
+   (= %{env:OCSIPERSIST_TEST_PGSQL=false} true))
   (deps
    (package ocsipersist-pgsql))))
 

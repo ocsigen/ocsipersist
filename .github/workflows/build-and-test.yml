@@ -50,6 +50,9 @@ jobs:
       # The PostgreSQL backend test spins up an ephemeral local cluster using
       # the binaries reported by "pg_config --bindir". PostgreSQL is
       # preinstalled on GitHub-hosted Ubuntu runners and pg_config is already
-      # on the PATH, so no extra installation step is required.
+      # on the PATH, so no extra installation step is required. The test is
+      # opt-in (see test/dune).
       - name: Run tests
         run: opam exec -- dune runtest
+        env:
+          OCSIPERSIST_TEST_PGSQL: true

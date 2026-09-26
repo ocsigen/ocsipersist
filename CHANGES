@@ -1,3 +1,12 @@
+## 3.1.1 (unreleased)
+
+Packaging:
+* Require lwt >= 5.7.0: ocsipersist-lib uses `Lwt.reraise` since 2.1.0.
+* The PostgreSQL backend test, which starts a local server, now runs only
+  when `OCSIPERSIST_TEST_PGSQL=true` is set, so building
+  ocsipersist-pgsql with tests no longer fails where no server can be
+  started.
+
 ## 3.1.0 (2026-09-25)
 
 New features:
