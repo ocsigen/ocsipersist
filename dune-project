@@ -50,6 +50,7 @@
  (description "This library defines signatures and auxiliary tools for defining backends for the Ocsipersist frontent. Ocsipersist is used pervasively in Eliom/Ocsigen to handle sessions and references. It can be used as an extension for ocsigenserver or as a library. Implementations of the following backends currently exist: DBM, PostgreSQL, SQLite.")
  (maintenance_intent "(latest)")
  (depends
+  (ocaml (>= 4.14))
   (lwt (>= 5.7.0))
   (js_of_ocaml (>= 6.0.0))))
 
