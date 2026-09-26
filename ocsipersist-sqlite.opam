@@ -10,7 +10,7 @@ homepage: "https://github.com/ocsigen/ocsipersist"
 bug-reports: "https://github.com/ocsigen/ocsipersist/issues"
 depends: [
   "dune" {>= "3.18"}
-  "lwt" {>= "4.2.0"}
+  "lwt" {>= "5.7.0"}
   "logs"
   "ocsipersist"
   "sqlite3"
