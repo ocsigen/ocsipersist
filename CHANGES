@@ -1,3 +1,10 @@
+## 3.1.2 (2026-09-27)
+
+Packaging:
+* Require OCaml >= 4.14 in ocsipersist-lib (it uses `String.for_all`).
+* Tests: the DBM tests run on Arch Linux (no `which`) and FreeBSD
+  (`waitpid` interrupted by `SIGCHLD`).
+
 ## 3.1.1 (2026-09-26)
 
 Packaging:

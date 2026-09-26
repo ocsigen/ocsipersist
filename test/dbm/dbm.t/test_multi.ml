@@ -55,6 +55,13 @@ let reader () =
      touch done_file;
      Lwt.return_unit)
 
+(* The reader runs Lwt_main.run, which installs a SIGCHLD handler: when the
+   writer exits, the signal can interrupt the blocking waitpid (EINTR on
+   FreeBSD, where the call is not restarted). *)
+let rec waitpid_restart pid =
+  try Unix.waitpid [] pid
+  with Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_restart pid
+
 let () =
   match Sys.argv with
   | [|_; "write"|] -> writer ()
@@ -69,7 +76,7 @@ let () =
       in
       Unix.close devnull;
       reader ();
-      let _, status = Unix.waitpid [] writer_pid in
+      let _, status = waitpid_restart writer_pid in
       (match status with
        | Unix.WEXITED 0 -> ()
        | _ -> Printf.eprintf "writer exited with error\n%!"; exit 1)
