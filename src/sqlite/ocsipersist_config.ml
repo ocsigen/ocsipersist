@@ -1,16 +1,15 @@
 let parse_global_config = function
-  | [] -> None
-  | [Xml.Element ("database", [("file", s)], [])] -> Some s
+  | [Xml.Element ("database", [("file", s)], [])] -> s
+  | [] ->
+      Ocsigen.Extensions.badconfig
+        "Ocsipersist: <database file=\"...\"/> is missing. It gives the database file (Ocsigen Server's <datadir> is no longer used)."
   | _ ->
       raise
         (Ocsigen.Extensions.Error_in_config_file
            "Unexpected content inside Ocsipersist config")
 
 let init config =
-  Ocsipersist_settings.db_file := Ocsigen.Config.get_datadir () ^ "/ocsidb";
-  (match parse_global_config config with
-  | None -> ()
-  | Some d -> Ocsipersist_settings.db_file := d);
+  Ocsipersist_settings.db_file := parse_global_config config;
   try Ocsipersist.init ()
   with e ->
     Ocsigen.Messages.errlog

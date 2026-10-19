@@ -1,9 +1,15 @@
 (subdir
  sqlite
  (cram
+  (applies_to sqlite)
   (package ocsipersist-sqlite)
   (deps
-   (package ocsipersist-sqlite))))
+   (package ocsipersist-sqlite)))
+ (cram
+  (applies_to config)
+  (package ocsipersist-sqlite-config)
+  (deps
+   (package ocsipersist-sqlite-config))))
 
 ; The PostgreSQL test starts a local server with initdb and pg_ctl, which is
 ; not available everywhere the tests run (opam-repository's CI only has the
@@ -21,6 +27,12 @@
 (subdir
  dbm
  (cram
+  (applies_to dbm)
   (package ocsipersist-dbm)
   (deps
-   (package ocsipersist-dbm))))
+   (package ocsipersist-dbm)))
+ (cram
+  (applies_to config)
+  (package ocsipersist-dbm-config)
+  (deps
+   (package ocsipersist-dbm-config))))

@@ -1,0 +1,5 @@
+(executable
+ (name test)
+ (modules test)
+ (link_flags (-linkall))
+ (libraries logs ocsigenserver ocsipersist-dbm-config))
