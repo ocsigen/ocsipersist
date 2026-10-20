@@ -20,3 +20,14 @@ directory. The server is stopped through its command pipe.
   $ grep -o "Initialization complete" out.log
   Initialization complete
   $ test -d store
+
+Without a log directory, the server logs to its standard error, and ocsidbm
+writes its errors there too. Here ocsidbm cannot create its socket, since a
+file of that name is in the way, so the server fails.
+
+  $ mkdir busy && touch busy/socket
+  $ sed "s|OCSIDBM|$(command -v ocsidbm)|" nolog.conf.in >nolog.conf
+  $ ./_build/default/test.exe nolog.conf >out.log 2>&1; echo "exit $?"
+  exit 9
+  $ grep -o -m 1 'Ocsidbm - Please make sure that the directory busy exists' out.log
+  Ocsidbm - Please make sure that the directory busy exists

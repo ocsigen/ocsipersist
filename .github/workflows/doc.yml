@@ -47,11 +47,13 @@ jobs:
         uses: actions/cache@v6
         with:
           path: _opam
-          key: opam-switch-${{ runner.os }}-ocaml5.4.0-${{ hashFiles('*.opam') }}-wodoc-${{ steps.wodoc.outputs.sha }}
+          key: opam-switch-${{ runner.os }}-ocaml5.4.0-${{ hashFiles('*.opam') }}-wodoc-${{ steps.wodoc.outputs.sha }}-ocsigenserver-master
 
       - name: Install dependencies
         if: steps.switch-cache.outputs.cache-hit != 'true'
+        # Ocsigen Server master until 8.1 is released (see build-and-test.yml).
         run: |
+          opam pin add -n ocsigenserver git+https://github.com/ocsigen/ocsigenserver.git#master
           opam install . --deps-only --with-doc
           opam pin add -n wodoc https://github.com/ocsigen/wodoc.git
           opam install wodoc odoc
