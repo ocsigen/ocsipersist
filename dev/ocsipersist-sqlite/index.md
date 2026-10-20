@@ -6,7 +6,7 @@ SQLite backend for Ocsipersist. For the API documentation see OPAM package [ocsi
 
 If you are not using Ocsigen Server's configuration file, add library `ocsipersist-sqlite.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file. The database file is required: there is no default. The directory of the file must exist. Set it before calling `Ocsipersist.init ()` and before the first access to the database, otherwise they fail with an error asking for it.
 
-Creating a persistent reference, a `Store_json` value or a table does not access the database: it is accessed at the first `get`, `set`, `find` or other use of the value. So these values can be created before the file is set, for instance when a module is initialised. `Store.open_store` and `Store.make_persistent` access the database when called. An access that fails because the file is not set yet does not break the value: the next access tries again. Each access uses the file set when it is made.
+Creating a persistent reference, a `Store_json` value or a table does not access the database: it is accessed at the first `get`, `set`, `find` or other use of the value. So these values can be created before the file is set, for instance when a module is initialised. `Store.open_store` and `Store.make_persistent` access the database when called. An access that fails because the file is not set yet does not break the value: the next access tries again. The file is read when an access is made, not later in the thread that runs it. Set it once: a table is created once per program, so changing the file afterwards is not supported.
 
 ```ocaml
 let () =

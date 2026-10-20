@@ -41,7 +41,7 @@ val make_persistent_lazy :
   default:(unit -> 'a) ->
   'a t Lwt.t
 ```
-Same as make\_persistent but the default value is evaluated only if needed
+Same as [`make_persistent`](./#val-make_persistent), but `default ()` is computed only if the value does not exist, at the first [`get`](./#val-get) or [`set`](./#val-set). If that access fails, the next one computes it again.
 
 ```ocaml
 val make_persistent_lazy_lwt : 
@@ -51,7 +51,7 @@ val make_persistent_lazy_lwt :
   default:(unit -> 'a Lwt.t) ->
   'a t Lwt.t
 ```
-Lwt version of make\_persistent\_lazy.
+Same as [`make_persistent_lazy`](./#val-make_persistent_lazy), with a default computed in Lwt.
 
 ```ocaml
 val get : 'a t -> 'a Lwt.t
