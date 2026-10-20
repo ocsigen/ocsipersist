@@ -40,6 +40,10 @@ Bug fixes:
   later in the thread running it. An access made just before
   `Ocsipersist_settings.set_db_file` could use the new file or fail, at
   random.
+* SQLite: when the database file is changed and the new file cannot be
+  opened, the connection to the old file, closed by then, is dropped.
+  Before, the next access with the old file used it and failed, and
+  closing it again at exit raised.
 
 ## 3.1.2 (2026-09-27)
 

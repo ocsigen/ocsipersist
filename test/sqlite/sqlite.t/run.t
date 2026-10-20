@@ -78,3 +78,11 @@ thread runs it:
 
   $ dune exec -- ./test_db_file_change.exe
   $ test -e first.db && test ! -e second.db
+
+When the file changes and the new one cannot be opened, the closed
+connection to the old file is dropped, and the old file can be used again:
+
+  $ dune exec -- ./test_db_file_reopen.exe
+  first file: ok
+  file that cannot be opened: Sqlite3.Error
+  first file again: ok
