@@ -10,7 +10,17 @@ The DBM backend uses a server process [ocsidbm].
 If you are not using Ocsigen Server's configuration file,
 add library [ocsipersist-dbm.settings] in your Dune file, and
 use module {!Ocsipersist_settings}
-to configure the storage file. 
+to configure the storage directory.
+The directory is required: there is no default. Set it before
+[Ocsipersist.init ()], otherwise it fails with an error asking for it.
+By default, ocsidbm writes its errors to the standard error of the program;
+{!Ocsipersist_settings.set_error_log_path} sends them to a file instead.
+
+{[
+let () =
+  Ocsipersist_settings.set_store "data/store";
+  Ocsipersist.init ()
+]}
 
 {1 Using with Ocsigen Server: ocsipersist-dbm-config}
 

@@ -9,9 +9,6 @@ open Sqlite3
 open Printf
 
 module Aux = struct
-  (* This reference is overwritten when the init function (at the end of the file)
-   is run, which occurs when the extension is loaded *)
-  let db_file = Ocsipersist_settings.db_file
   let yield () = Thread.yield ()
 
   let rec bind_safely stmt = function
@@ -32,20 +29,20 @@ module Aux = struct
   let db_conn : Sqlite3.db option ref = ref None
   let db_conn_file = ref ""
 
+  (* The database file is read at each access, so that it can be set after
+     this module is initialised. Without it, the access fails. *)
   let get_db () =
+    let file = Ocsipersist_settings.get_db_file () in
+    let open_db () =
+      let db = db_open file in
+      db_conn := Some db;
+      db_conn_file := file;
+      db
+    in
     match !db_conn with
-    | Some db when !db_conn_file = !db_file -> db
-    | Some db ->
-        close_safely db;
-        let db = db_open !db_file in
-        db_conn := Some db;
-        db_conn_file := !db_file;
-        db
-    | None ->
-        let db = db_open !db_file in
-        db_conn := Some db;
-        db_conn_file := !db_file;
-        db
+    | Some db when !db_conn_file = file -> db
+    | Some db -> close_safely db; open_db ()
+    | None -> open_db ()
 
   let () =
     at_exit (fun () ->

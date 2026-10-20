@@ -28,7 +28,7 @@ let init_fun config =
   | None ->
       Ocsigen.Extensions.badconfig
         "Ocsipersist: <store dir=\"...\"/> is missing. It gives the directory of the database (Ocsigen Server's <datadir> is no longer used)."
-  | Some d -> Ocsipersist_settings.directory := d);
+  | Some d -> Ocsipersist_settings.set_store d);
   (match ocsidbmconf with
   | None -> ()
   | Some d -> Ocsipersist_settings.ocsidbm := d);

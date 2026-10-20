@@ -10,7 +10,9 @@ module T =
     (Functorial.Column.String)
     (Functorial.Column.String)
 
-let () = Ocsipersist.init ()
+let () =
+  Ocsipersist_settings.set_db_file "ocsidb";
+  Ocsipersist.init ()
 
 let main () =
   (* Clean slate *)
