@@ -36,6 +36,10 @@ Bug fixes:
   persistent reference of the program. The first access to a table
   (`Functorial.Table`, `Polymorphic.open_table`) is also tried again after
   a failure with SQLite and PostgreSQL.
+* SQLite: each access uses the database file set when the access is made.
+  The file was read later, in the thread running the access, so an access
+  made just before `Ocsipersist_settings.set_db_file` could use the new
+  file or fail, at random.
 
 ## 3.1.2 (2026-09-27)
 

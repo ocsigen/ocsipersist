@@ -29,10 +29,8 @@ module Aux = struct
   let db_conn : Sqlite3.db option ref = ref None
   let db_conn_file = ref ""
 
-  (* The database file is read at each access, so that it can be set after
-     this module is initialised. Without it, the access fails. *)
-  let get_db () =
-    let file = Ocsipersist_settings.get_db_file () in
+  (* [get_db file] is a connection to [file], reopened when the file changes. *)
+  let get_db file =
     let open_db () =
       let db = db_open file in
       db_conn := Some db;
@@ -48,16 +46,22 @@ module Aux = struct
     at_exit (fun () ->
       match !db_conn with Some db -> close_safely db | None -> ())
 
+  (* The setting is read here, in the calling thread, and not in the worker
+     thread: an access uses the file set when it is made, even if the worker
+     thread runs it after a later call to [set_db_file]. *)
   let exec_safely f =
-    let aux () =
-      Mutex.lock m;
-      try
-        let db = get_db () in
-        let r = f db in
-        Mutex.unlock m; r
-      with e -> Mutex.unlock m; raise e
-    in
-    Lwt_preemptive.detach aux ()
+    match Ocsipersist_settings.get_db_file () with
+    | exception (Failure _ as e) -> Lwt.fail e
+    | file ->
+        let aux () =
+          Mutex.lock m;
+          try
+            let db = get_db file in
+            let r = f db in
+            Mutex.unlock m; r
+          with e -> Mutex.unlock m; raise e
+        in
+        Lwt_preemptive.detach aux ()
 
   (* Référence indispensable pour les codes de retours et leur signification :
    * http://sqlite.org/capi3ref.html

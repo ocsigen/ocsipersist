@@ -45,3 +45,8 @@
   js_of_ocaml.deriving)
  (preprocess
   (pps js_of_ocaml-ppx_deriving_json)))
+
+(executable
+ (name test_db_file_change)
+ (modules test_db_file_change)
+ (libraries ocsipersist ocsipersist-sqlite ocsipersist-sqlite.settings))

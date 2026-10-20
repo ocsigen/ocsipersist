@@ -72,3 +72,9 @@ the next one:
     ref: 2
     ref_json: 2
     store_json: 2
+
+An access uses the database file set when it is made, not when its worker
+thread runs it:
+
+  $ dune exec -- ./test_db_file_change.exe
+  $ test -e first.db && test ! -e second.db
