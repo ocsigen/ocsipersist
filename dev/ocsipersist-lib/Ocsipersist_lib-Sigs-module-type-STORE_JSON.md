@@ -13,7 +13,7 @@ Data are divided into stores. Create one store for your project, where you will 
 ```ocaml
 val open_store : string -> store Lwt.t
 ```
-Open a store (and create it if it does not exist)
+Open a store (and create it if it does not exist). It does not access the database.
 
 ```ocaml
 val make_persistent : 
@@ -23,7 +23,7 @@ val make_persistent :
   default:'a ->
   'a t Lwt.t
 ```
-`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation. An existing value that cannot be deserialised with `json` is left in place: reading it with [`get`](./#val-get) then fails with `Ocsipersist_lib.Decoding_error`, and the caller decides whether to overwrite it with [`set`](./#val-set).
+`make_persistent ~store ~name ~json ~default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. Uses `Deriving_Json` for type-safe serialisation. It does not access the database: the value is looked up, and `default` written if it does not exist, at the first [`get`](./#val-get) or [`set`](./#val-set), so it can be called before the backend is configured. If that first access fails, the next one tries again. An existing value that cannot be deserialised with `json` is left in place: reading it with [`get`](./#val-get) then fails with `Ocsipersist_lib.Decoding_error`, and the caller decides whether to overwrite it with [`set`](./#val-set).
 
 ```ocaml
 val make_persistent_lazy : 

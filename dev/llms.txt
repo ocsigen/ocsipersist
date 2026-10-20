@@ -21,6 +21,7 @@
 - [Module `Ocsipersist_config`](ocsipersist-pgsql-config/Ocsipersist_config.md)
 - [Module `Ocsidbmtypes`](ocsipersist-dbm/Ocsidbmtypes.md)
 - [Module `Ocsipersist_settings`](ocsipersist-dbm/Ocsipersist_settings.md)
+- [Module `Ocsipersist_lib.Lazy_lwt`](ocsipersist-lib/Ocsipersist_lib-Lazy_lwt.md)
 - [Module `Column.Float`](ocsipersist-lib/Ocsipersist_lib-Polymorphic-argument-1-Functorial-Column-Float.md)
 - [Parameter `Json.C`](ocsipersist-lib/Ocsipersist_lib-Polymorphic-argument-1-Functorial-Column-Json-argument-1-C.md)
 - [Module `Column.Json`](ocsipersist-lib/Ocsipersist_lib-Polymorphic-argument-1-Functorial-Column-Json.md)

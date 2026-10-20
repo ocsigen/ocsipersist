@@ -15,12 +15,12 @@ Data are divided into stores. Create one store for your project, where you will 
 ```ocaml
 val open_store : string -> store Lwt.t
 ```
-Open a store (and create it if it does not exist)
+Open a store (and create it if it does not exist). With the SQLite and PostgreSQL backends, it accesses the database when called, so the backend must be configured first.
 
 ```ocaml
 val make_persistent : store:store -> name:string -> default:'a -> 'a t Lwt.t
 ```
-`make_persistent store name default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist.
+`make_persistent store name default` find a persistent value named `name` in store `store` from database, or create it with the default value `default` if it does not exist. It accesses the database when called, so the backend must be configured first. `Ref` and `Store_json` wait for the first use of a value instead.
 
 ```ocaml
 val make_persistent_lazy : 

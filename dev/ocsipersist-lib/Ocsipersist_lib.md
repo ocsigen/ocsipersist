@@ -22,6 +22,11 @@ val is_valid_name_char : char -> bool
 val validate_name : string -> unit
 ```
 ```ocaml
+module Lazy_lwt : sig ... end
+```
+Promises computed at first use. Unlike `Lwt.t Lazy.t`, a failure is not kept: the next use runs the computation again. Ocsipersist uses them to access the database only when a value is first used, not when it is created, and to retry an access that failed, for instance because the backend was not configured yet.
+
+```ocaml
 module Polymorphic (Functorial : Sigs.FUNCTORIAL) : Sigs.POLYMORPHIC
 ```
 deriving polymorphic interface from the functorial one

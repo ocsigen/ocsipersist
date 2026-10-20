@@ -9,12 +9,12 @@ module Store : Sigs.STORE
 ## Signature
 
 ```ocaml
-val store : Store.store Lwt.t lazy_t
+val store : Store.store Lazy_lwt.t
 ```
 ```ocaml
 type 'a t = 
   | Ref of 'a Stdlib.ref
-  | Per of 'a Store.t Lwt.t
+  | Per of 'a Store.t Lazy_lwt.t
 ```
 ```ocaml
 val ref : ?persistent:string -> 'a -> 'a t

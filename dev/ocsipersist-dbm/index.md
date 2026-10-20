@@ -6,6 +6,8 @@ DBM backend for Ocsipersist. For the API documentation see OPAM package [ocsiper
 
 If you are not using Ocsigen Server's configuration file, add library `ocsipersist-dbm.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage directory. The directory is required: there is no default. Set it before `Ocsipersist.init ()`, otherwise it fails with an error asking for it. By default, ocsidbm writes its errors to the standard error of the program; [`Ocsipersist_settings.set_error_log_path`](./Ocsipersist_settings.md#val-set_error_log_path) sends them to a file instead.
 
+`Ocsipersist.init ()` connects to ocsidbm: the database can be accessed only after it. Creating a persistent reference, a `Store_json` value or a table does not access the database: it is accessed at the first `get`, `set`, `find` or other use of the value. So these values can be created before `Ocsipersist.init ()`, for instance when a module is initialised. `Store.make_persistent` accesses the database when called. An access made before `Ocsipersist.init ()` fails, without breaking the value: the next access tries again.
+
 ```ocaml
 let () =
   Ocsipersist_settings.set_store "data/store";

@@ -14,6 +14,8 @@ Ocsipersist defines several interfaces:
 - `Store` is a lower level interface for persistent values
 - `Polymorphic` is a polymorphic table, using Mahshal
 - `Functorial` is a typed interface for your own data type
+Creating a persistent value with [`Ref.ref`](./Ocsipersist-Ref.md#val-ref), [`Ref_json.ref`](./Ocsipersist-Ref_json.md#val-ref) or [`Store_json.make_persistent`](./Ocsipersist-Store_json.md#val-make_persistent), or a table with [`Polymorphic.open_table`](./Ocsipersist-Polymorphic.md#val-open_table) or [`Functorial.Table`](./Ocsipersist-Functorial-Table.md), does not access the database. The database is accessed at the first use of the value or table, and if that access fails, for instance because the backend is not configured yet, the next one tries again. So they can be created when a module is initialised, before the backend is configured. On the contrary, [`Store.open_store`](./Ocsipersist-Store.md#val-open_store) (except with DBM) and [`Store.make_persistent`](./Ocsipersist-Store.md#val-make_persistent) access the database when called.
+
 Example of use from the toplevel:
 
 ```ocaml
