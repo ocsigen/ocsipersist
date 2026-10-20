@@ -7,6 +7,10 @@ Breaking changes:
   `<database file="..."/>`. Without the tag, the server refuses to start
   with a clear error, instead of storing the data in a directory chosen when
   Ocsigen Server was built.
+* `ocsipersist-dbm-config` follows Ocsigen Server 8.1, where there is no log
+  directory unless the configuration gives one. Without it, ocsidbm writes
+  its errors to the standard error of the server. This needs Ocsigen Server
+  8.1, whose `Messages.error_log_path` returns an option.
 
 ## 3.1.2 (2026-09-27)
 

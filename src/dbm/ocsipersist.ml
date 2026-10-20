@@ -19,13 +19,18 @@ module Db = struct
   let launch_ocsidbm () =
     let param = [|!Config.ocsidbm; !Config.directory|] in
     let log =
-      Unix.openfile !Config.error_log_path
-        [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND]
-        0o640
+      Option.map
+        (fun path ->
+           Unix.openfile path [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND] 0o640)
+        !Config.error_log_path
     in
     let devnull = Unix.openfile "/dev/null" [Unix.O_RDWR] 0 in
-    let pid = Unix.create_process !Config.ocsidbm param devnull devnull log in
-    Unix.close log;
+    (* Without a log file, ocsidbm writes its errors to our standard error. *)
+    let pid =
+      Unix.create_process !Config.ocsidbm param devnull devnull
+        (Option.value log ~default:Unix.stderr)
+    in
+    Option.iter Unix.close log;
     Unix.close devnull;
     (* ocsidbm detaches itself via setsid; we just need to reap the child *)
     ignore (Unix.waitpid [Unix.WNOHANG] pid : int * Unix.process_status)
