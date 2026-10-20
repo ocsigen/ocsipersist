@@ -198,9 +198,10 @@ module Functorial = struct
         in
         Aux.step_until_done (prepare db sql)
       in
-      lazy (Aux.exec_safely create)
+      Ocsipersist_lib.Lazy_lwt.make (fun () -> Aux.exec_safely create)
 
-    let with_table f = Lazy.force init >>= fun () -> Aux.exec_safely f
+    let with_table f =
+      Ocsipersist_lib.Lazy_lwt.force init >>= fun () -> Aux.exec_safely f
 
     let db_get key db =
       let sqlget = sprintf "SELECT value FROM %s WHERE key = :key" name in

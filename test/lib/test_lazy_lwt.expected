@@ -1,0 +1,19 @@
+Sharing, retry after a failure, caching of a success:
+make: (computations: 0)
+first force: pending (computations: 1)
+concurrent force: pending (computations: 1)
+first force: rejected with Failure("not configured") (computations: 1)
+concurrent force: rejected with Failure("not configured") (computations: 1)
+force after the failure: pending (computations: 2)
+force after the failure: fulfilled with 42 (computations: 2)
+force after the success: fulfilled with 42 (computations: 2)
+An exception raised by the computation is retried too:
+first force: rejected with Failure("not configured") (computations: 1)
+second force: fulfilled with 1 (computations: 2)
+Cancelling one caller does not cancel the others:
+cancelled force: cancelled (computations: 1)
+other force: pending (computations: 1)
+other force: fulfilled with 7 (computations: 1)
+A force from the failure handler of a caller runs it again:
+force from the handler: pending (computations: 2)
+force from the handler: fulfilled with 3 (computations: 2)

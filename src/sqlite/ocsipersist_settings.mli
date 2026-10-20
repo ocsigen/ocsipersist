@@ -4,7 +4,9 @@
 val set_db_file : string -> unit
 (** [set_db_file file] sets the database file. It is required: there is no
     default. The directory of [file] must exist. Set it before
-    [Ocsipersist.init ()] or the first use of a store. *)
+    [Ocsipersist.init ()] and before the first access to the database. Creating
+    a persistent reference or a table does not access it: its first use
+    does. *)
 
 (**/**)
 

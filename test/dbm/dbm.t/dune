@@ -12,3 +12,10 @@
  (name test_no_store)
  (modules test_no_store)
  (libraries ocsipersist ocsipersist-dbm))
+
+(executable
+ (name test_set_later)
+ (modules test_set_later)
+ (libraries ocsipersist ocsipersist-dbm js_of_ocaml.deriving)
+ (preprocess
+  (pps js_of_ocaml-ppx_deriving_json)))

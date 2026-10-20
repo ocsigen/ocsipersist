@@ -20,7 +20,19 @@ module T =
     (Functorial.Column.String)
     (Functorial.Column.String)
 
-let () = Ocsipersist.init ()
+(* A persistent reference created, and a table used, before
+   [Ocsipersist.init]: the failed accesses are tried again after it. *)
+let r = Ocsipersist.Ref.ref ~persistent:"r" 0
+
+let () =
+  let report name p =
+    match Lwt_main.run p with
+    | _ -> Printf.printf "%s before init: no error\n%!" name
+    | exception Failure msg -> Printf.printf "%s before init: %s\n%!" name msg
+  in
+  report "length" (T.length ());
+  report "ref" (Ocsipersist.Ref.get r);
+  Ocsipersist.init ()
 
 let main () =
   let* () = T.add "a" "1" in
@@ -45,6 +57,9 @@ let main () =
   let* () = T.remove "b" in
   let* n = T.length () in
   Printf.printf "length after remove: %d\n%!" n;
+  let* () = Ocsipersist.Ref.set r 1 in
+  let* v = Ocsipersist.Ref.get r in
+  Printf.printf "ref after init: %d\n%!" v;
   (* Clean up for idempotent reruns *)
   let* () = T.remove "a" in
   let* () = T.remove "c" in

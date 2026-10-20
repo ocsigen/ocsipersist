@@ -179,7 +179,14 @@ module Sigs = struct
         value in the persistent reference table.
         If the reference already exists, the current value is kept.
         Be careful to change this name every time you change the type of the
-        value. *)
+        value.
+
+        [ref] does not access the database: the reference is looked up, and
+        [default] written if it does not exist, at the first {!get} or
+        {!set}. So a persistent reference can be created before the backend
+        is configured, for instance when a module is initialised. If that
+        first access fails, for instance because the backend is not
+        configured yet, the next one tries again. *)
 
     val get : 'a t -> 'a Lwt.t
     (** Get the value of a reference *)
@@ -197,13 +204,18 @@ module Sigs = struct
         Create one store for your project, where you will save all your data. *)
 
     val open_store : string -> store Lwt.t
-    (** Open a store (and create it if it does not exist)  *)
+    (** Open a store (and create it if it does not exist).
+        With the SQLite and PostgreSQL backends, it accesses the database when
+        called, so the backend must be configured first. *)
 
     val make_persistent : store:store -> name:string -> default:'a -> 'a t Lwt.t
     (** [make_persistent store name default] find a persistent value
         named [name] in store [store]
         from database, or create it with the default value [default] if it
-        does not exist. *)
+        does not exist.
+        It accesses the database when called, so the backend must be
+        configured first. [Ref] and [Store_json] wait for the first use of
+        a value instead. *)
 
     val make_persistent_lazy :
        store:store
@@ -242,7 +254,14 @@ module Sigs = struct
         the reference will not be persistent (implemented using OCaml references).
         Otherwise, the value of [persistent] will be used as key for the
         value in the persistent reference table.
-        If the reference already exists, the current value is kept. *)
+        If the reference already exists, the current value is kept.
+
+        [ref] does not access the database: the reference is looked up, and
+        [default] written if it does not exist, at the first {!get} or
+        {!set}. So a persistent reference can be created before the backend
+        is configured, for instance when a module is initialised. If that
+        first access fails, for instance because the backend is not
+        configured yet, the next one tries again. *)
 
     val get : 'a t -> 'a Lwt.t
     (** Get the value of a reference *)
@@ -260,7 +279,8 @@ module Sigs = struct
         Create one store for your project, where you will save all your data. *)
 
     val open_store : string -> store Lwt.t
-    (** Open a store (and create it if it does not exist)  *)
+    (** Open a store (and create it if it does not exist). It does not access
+        the database. *)
 
     val make_persistent :
        store:store
@@ -272,6 +292,10 @@ module Sigs = struct
         named [name] in store [store]
         from database, or create it with the default value [default] if it
         does not exist. Uses {!Deriving_Json} for type-safe serialisation.
+        It does not access the database: the value is looked up, and
+        [default] written if it does not exist, at the first {!get} or
+        {!set}, so it can be called before the backend is configured. If that
+        first access fails, the next one tries again.
         An existing value that cannot be deserialised with [json] is left in
         place: reading it with {!get} then fails with
         [Ocsipersist_lib.Decoding_error], and the caller decides whether to
@@ -332,6 +356,50 @@ let validate_name name =
       (Printf.sprintf
          "Ocsipersist: invalid table/store name %S (only [a-zA-Z0-9_] allowed)"
          name)
+
+(** Promises computed at first use. Unlike [Lwt.t Lazy.t], a failure is not
+    kept: the next use runs the computation again. Ocsipersist uses them to
+    access the database only when a value is first used, not when it is
+    created, and to retry an access that failed, for instance because the
+    backend was not configured yet. *)
+module Lazy_lwt : sig
+  type 'a t
+
+  val make : (unit -> 'a Lwt.t) -> 'a t
+  (** [make f] is a promise computed by [f ()] at its first {!force}. *)
+
+  val force : 'a t -> 'a Lwt.t
+  (** [force l] runs [f ()], where [f] is the function given to {!make}, at
+      the first call, and returns the same result to later calls while it is
+      pending or fulfilled: concurrent callers share one computation. If it is
+      rejected, the next call runs [f ()] again, also when it is made from a
+      failure handler of a caller. Cancelling the promise returned to one
+      caller does not cancel the shared computation. [f] must not force the
+      value it computes. *)
+end = struct
+  type 'a t = {compute : unit -> 'a Lwt.t; mutable promise : 'a Lwt.t option}
+
+  let make compute = {compute; promise = None}
+
+  let is_rejected p =
+    match Lwt.state p with
+    | Lwt.Fail _ -> true
+    | Lwt.Return _ | Lwt.Sleep -> false
+
+  (* A rejected promise is replaced when it is forced again. Clearing it in a
+     callback of the promise would not do: Lwt may run the failure handler of
+     a caller first, and a force from that handler would get the rejection. *)
+  let force l =
+    let p =
+      match l.promise with
+      | Some p when not (is_rejected p) -> p
+      | Some _ | None ->
+          let p = Lwt.apply l.compute () in
+          l.promise <- Some p;
+          p
+    in
+    Lwt.protected p
+end
 
 (** deriving polymorphic interface from the functorial one *)
 module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
@@ -404,22 +472,24 @@ struct
 end
 
 module Ref (Store : STORE) = struct
-  let store = lazy (Store.open_store "__ocsipersist_ref_store__")
+  let store =
+    Lazy_lwt.make (fun () -> Store.open_store "__ocsipersist_ref_store__")
 
-  type 'a t = Ref of 'a ref | Per of 'a Store.t Lwt.t
+  type 'a t = Ref of 'a ref | Per of 'a Store.t Lazy_lwt.t
 
   let ref ?persistent v =
     match persistent with
     | None -> Ref (ref v)
     | Some name ->
         Per
-          (let* store = Lazy.force store in
-           Store.make_persistent ~store ~name ~default:v)
+          (Lazy_lwt.make (fun () ->
+             let* store = Lazy_lwt.force store in
+             Store.make_persistent ~store ~name ~default:v))
 
   let get = function
     | Ref r -> Lwt.return !r
     | Per r ->
-        let* r = r in
+        let* r = Lazy_lwt.force r in
         Store.get r
 
   let set r v =
@@ -428,13 +498,18 @@ module Ref (Store : STORE) = struct
         r := v;
         Lwt.return_unit
     | Per r ->
-        let* r = r in
+        let* r = Lazy_lwt.force r in
         Store.set r v
 end
 
 module Store_json (Functorial : FUNCTORIAL) : STORE_JSON = struct
   type store = string
-  type 'a t = {find : unit -> 'a Lwt.t; add : 'a -> unit Lwt.t}
+
+  type 'a t =
+    { init : unit Lazy_lwt.t
+      (** Writes the default value if there is none, at the first use. *)
+    ; find : unit -> 'a Lwt.t
+    ; add : 'a -> unit Lwt.t }
 
   let open_store name =
     validate_name name;
@@ -462,17 +537,20 @@ module Store_json (Functorial : FUNCTORIAL) : STORE_JSON = struct
     in
     let find () = T.find name in
     let add v = T.add name v in
-    Lwt.catch
-      (fun () -> find () >>= fun _ -> Lwt.return ())
-      (function
-        | Not_found -> default () >>= fun def -> add def
-        | Decoding_error _ ->
-            (* An existing value that cannot be decoded is left in place:
-               deciding whether to overwrite or report it belongs to the
-               caller, on [get]. *)
-            Lwt.return ()
-        | e -> Lwt.fail e)
-    >>= fun () -> Lwt.return {find; add}
+    let init =
+      Lazy_lwt.make (fun () ->
+        Lwt.catch
+          (fun () -> find () >>= fun _ -> Lwt.return ())
+          (function
+            | Not_found -> default () >>= fun def -> add def
+            | Decoding_error _ ->
+                (* An existing value that cannot be decoded is left in place:
+                   deciding whether to overwrite or report it belongs to the
+                   caller, on [get]. *)
+                Lwt.return ()
+            | e -> Lwt.fail e))
+    in
+    Lwt.return {init; find; add}
 
   let make_persistent_lazy ~store ~name ~json ~default =
     let default () = Lwt.wrap default in
@@ -481,8 +559,10 @@ module Store_json (Functorial : FUNCTORIAL) : STORE_JSON = struct
   let make_persistent ~store ~name ~json ~default =
     make_persistent_lazy ~store ~name ~json ~default:(fun () -> default)
 
-  let get t = t.find ()
-  let set t v = t.add v
+  (* [set] also waits for [init], so that a default value written by a
+     concurrent first [get] cannot overwrite the value it sets. *)
+  let get t = Lazy_lwt.force t.init >>= t.find
+  let set t v = Lazy_lwt.force t.init >>= fun () -> t.add v
 end
 
 module Ref_json (Functorial : FUNCTORIAL) : REF_JSON = struct
@@ -490,6 +570,9 @@ module Ref_json (Functorial : FUNCTORIAL) : REF_JSON = struct
 
   let store = lazy (S.open_store "__ocsipersist_ref_json_store__")
 
+  (* [S.open_store] and [S.make_persistent] do not access the database: the
+     promise of a persistent reference is fulfilled at once, and the database
+     is accessed by [S.get] and [S.set]. *)
   type 'a t = Ref of 'a ref | Per of 'a S.t Lwt.t
 
   let ref (type a) ?persistent (json : a Deriving_Json.t) v =

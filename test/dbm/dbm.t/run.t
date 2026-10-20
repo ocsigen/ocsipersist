@@ -11,6 +11,29 @@ Run the test:
   length: 5
   iter_batch: 1 batches, 5 items
 
+Persistent values created before Ocsipersist is configured and initialised,
+as in a module initialised before the configuration, access the database
+at their first use, not when they are created:
+
+  $ dune exec -- ./test_set_later.exe
+  After Ocsipersist.init:
+    ref: 1
+    ref_json: 1
+    store_json: 1
+
+An access that fails because Ocsipersist is not initialised yet is tried
+again by the next one:
+
+  $ dune exec -- ./test_set_later.exe early
+  Before Ocsipersist.init:
+    ref: Ocsipersist not initialised
+    ref_json: Ocsipersist not initialised
+    store_json: Ocsipersist not initialised
+  After Ocsipersist.init:
+    ref: 2
+    ref_json: 2
+    store_json: 2
+
 Test two separate processes accessing the same ocsidbm simultaneously.
 The test_multi executable forks a writer subprocess, then runs a reader
 in the parent. Both connect to the same ocsidbm and share data.
