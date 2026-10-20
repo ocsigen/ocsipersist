@@ -1,4 +1,4 @@
-## Unreleased
+## 3.2.0 (unreleased)
 
 Breaking changes:
 * The configuration-file extensions no longer use Ocsigen Server's
