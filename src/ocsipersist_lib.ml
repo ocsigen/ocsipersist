@@ -307,8 +307,9 @@ module Sigs = struct
       -> json:'a Deriving_Json.t
       -> default:(unit -> 'a)
       -> 'a t Lwt.t
-    (** Same as make_persistent but the default value is evaluated only
-        if needed *)
+    (** Same as {!make_persistent}, but [default ()] is computed only if
+        the value does not exist, at the first {!get} or {!set}. If that
+        access fails, the next one computes it again. *)
 
     val make_persistent_lazy_lwt :
        store:store
@@ -316,7 +317,7 @@ module Sigs = struct
       -> json:'a Deriving_Json.t
       -> default:(unit -> 'a Lwt.t)
       -> 'a t Lwt.t
-    (** Lwt version of make_persistent_lazy. *)
+    (** Same as {!make_persistent_lazy}, with a default computed in Lwt. *)
 
     val get : 'a t -> 'a Lwt.t
     (** [get pv] gives the value of [pv]. Fails with

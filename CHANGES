@@ -21,10 +21,11 @@ Breaking changes:
   Without `Ocsipersist_settings.set_error_log_path`, ocsidbm writes its
   errors to the standard error of the program, instead of
   `ocsipersist-errors`.
-* `Ref.ref`, `Ref_json.ref` and `Store_json.make_persistent` no longer
-  access the database. The value is looked up, and its default written if
-  it is missing, at the first `get` or `set`. A database error is reported
-  there too, and no longer when the value is created.
+* `Ref.ref`, `Ref_json.ref`, `Store_json.make_persistent` and its `_lazy`
+  and `_lazy_lwt` variants no longer access the database. The value is
+  looked up, and its default written if it is missing, at the first `get`
+  or `set`. A database error is reported there too, and no longer when the
+  value is created.
 
 Bug fixes:
 * Persistent values created before the backend is configured, for instance
