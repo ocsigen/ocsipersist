@@ -36,6 +36,11 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
+      # ocsipersist-dbm-config needs Messages.error_log_path of Ocsigen Server
+      # 8.1, which returns an option. Remove this pin once 8.1 is released.
+      - name: Pin Ocsigen Server master
+        run: opam pin add -n ocsigenserver git+https://github.com/ocsigen/ocsigenserver.git#master
+
       - name: Install dependencies
         run: opam install . --deps-only --with-test
 
