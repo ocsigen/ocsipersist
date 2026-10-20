@@ -20,6 +20,16 @@
     - [Polymorphic] is a polymorphic table, using Mahshal
     - [Functorial] is a typed interface for your own data type
 
+    Creating a persistent value with {!Ref.ref}, {!Ref_json.ref} or
+    {!Store_json.make_persistent}, or a table with {!Polymorphic.open_table}
+    or {!Functorial.Table}, does not access the database. The database is
+    accessed at the first use of the value or table, and if that access
+    fails, for instance because the backend is not configured yet, the next
+    one tries again. So they can be created when a module is initialised,
+    before the backend is configured. On the contrary, {!Store.open_store}
+    (except with DBM) and {!Store.make_persistent} access the database when
+    called.
+
 Example of use from the toplevel:
 
 {[

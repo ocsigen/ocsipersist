@@ -195,9 +195,10 @@ module Functorial = struct
         in
         Aux.exec_ db query []
       in
-      lazy (use_pool @@ create_table T.name)
+      Ocsipersist_lib.Lazy_lwt.make (fun () -> use_pool @@ create_table T.name)
 
-    let with_table f = Lazy.force init >>= fun () -> use_pool f
+    let with_table f =
+      Ocsipersist_lib.Lazy_lwt.force init >>= fun () -> use_pool f
 
     let find key =
       with_table @@ fun db ->

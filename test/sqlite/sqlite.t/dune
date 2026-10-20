@@ -34,3 +34,19 @@
  (name test_no_db_file)
  (modules test_no_db_file)
  (libraries ocsipersist ocsipersist-sqlite lwt.unix))
+
+(executable
+ (name test_set_later)
+ (modules test_set_later)
+ (libraries
+  ocsipersist
+  ocsipersist-sqlite
+  ocsipersist-sqlite.settings
+  js_of_ocaml.deriving)
+ (preprocess
+  (pps js_of_ocaml-ppx_deriving_json)))
+
+(executable
+ (name test_db_file_change)
+ (modules test_db_file_change)
+ (libraries ocsipersist ocsipersist-sqlite ocsipersist-sqlite.settings))

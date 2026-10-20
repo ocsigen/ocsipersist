@@ -16,6 +16,15 @@ The directory is required: there is no default. Set it before
 By default, ocsidbm writes its errors to the standard error of the program;
 {!Ocsipersist_settings.set_error_log_path} sends them to a file instead.
 
+[Ocsipersist.init ()] connects to ocsidbm: the database can be accessed
+only after it. Creating a persistent reference, a [Store_json] value or a
+table does not access the database: it is accessed at the first [get],
+[set], [find] or other use of the value. So these values can be created
+before [Ocsipersist.init ()], for instance when a module is initialised.
+[Store.make_persistent] accesses the database when called. An access made
+before [Ocsipersist.init ()] fails, without breaking the value: the next
+access tries again.
+
 {[
 let () =
   Ocsipersist_settings.set_store "data/store";

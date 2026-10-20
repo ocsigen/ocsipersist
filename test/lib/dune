@@ -1,0 +1,4 @@
+(test
+ (name test_lazy_lwt)
+ (package ocsipersist-lib)
+ (libraries ocsipersist-lib lwt))
