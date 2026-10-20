@@ -26,8 +26,8 @@ let init_fun config =
   Ocsipersist_settings.error_log_path := Ocsigen.Messages.error_log_path ();
   (match store with
   | None ->
-      Ocsipersist_settings.directory :=
-        Ocsigen.Config.get_datadir () ^ "/ocsipersist"
+      Ocsigen.Extensions.badconfig
+        "Ocsipersist: <store dir=\"...\"/> is missing. It gives the directory of the database (Ocsigen Server's <datadir> is no longer used)."
   | Some d -> Ocsipersist_settings.directory := d);
   (match ocsidbmconf with
   | None -> ()

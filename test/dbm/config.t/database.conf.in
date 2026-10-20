@@ -1,0 +1,12 @@
+<ocsigen>
+  <server>
+    <port>127.0.0.1:0</port>
+    <logdir>log</logdir>
+    <commandpipe>local.cmd</commandpipe>
+    <extension name="ocsipersist">
+      <store dir="store"/>
+      <ocsidbm name="OCSIDBM"/>
+    </extension>
+    <host defaulthostname="localhost"><site path=""/></host>
+  </server>
+</ocsigen>
