@@ -21,10 +21,11 @@ Breaking changes:
   Without `Ocsipersist_settings.set_error_log_path`, ocsidbm writes its
   errors to the standard error of the program, instead of
   `ocsipersist-errors`.
-* `Ref.ref`, `Ref_json.ref` and `Store_json.make_persistent` no longer
-  access the database. The value is looked up, and its default written if
-  it is missing, at the first `get` or `set`. A database error is reported
-  there too, and no longer when the value is created.
+* `Ref.ref`, `Ref_json.ref`, `Store_json.make_persistent` and its `_lazy`
+  and `_lazy_lwt` variants no longer access the database. The value is
+  looked up, and its default written if it is missing, at the first `get`
+  or `set`. A database error is reported there too, and no longer when the
+  value is created.
 
 Bug fixes:
 * Persistent values created before the backend is configured, for instance
@@ -36,10 +37,14 @@ Bug fixes:
   persistent reference of the program. The first access to a table
   (`Functorial.Table`, `Polymorphic.open_table`) is also tried again after
   a failure with SQLite and PostgreSQL.
-* SQLite: each access uses the database file set when the access is made.
-  The file was read later, in the thread running the access, so an access
-  made just before `Ocsipersist_settings.set_db_file` could use the new
-  file or fail, at random.
+* SQLite: the database file is read when an access is made, no longer
+  later in the thread running it. An access made just before
+  `Ocsipersist_settings.set_db_file` could use the new file or fail, at
+  random.
+* SQLite: when the database file is changed and the new file cannot be
+  opened, the connection to the old file, closed by then, is dropped.
+  Before, the next access with the old file used it and failed, and
+  closing it again at exit raised.
 
 ## 3.1.2 (2026-09-27)
 

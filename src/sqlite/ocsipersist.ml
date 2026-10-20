@@ -39,7 +39,10 @@ module Aux = struct
     in
     match !db_conn with
     | Some db when !db_conn_file = file -> db
-    | Some db -> close_safely db; open_db ()
+    | Some db ->
+        close_safely db;
+        db_conn := None;
+        open_db ()
     | None -> open_db ()
 
   let () =

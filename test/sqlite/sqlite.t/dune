@@ -50,3 +50,8 @@
  (name test_db_file_change)
  (modules test_db_file_change)
  (libraries ocsipersist ocsipersist-sqlite ocsipersist-sqlite.settings))
+
+(executable
+ (name test_db_file_reopen)
+ (modules test_db_file_reopen)
+ (libraries ocsipersist ocsipersist-sqlite ocsipersist-sqlite.settings sqlite3))

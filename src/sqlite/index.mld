@@ -20,7 +20,9 @@ other use of the value. So these values can be created before the file is
 set, for instance when a module is initialised. [Store.open_store] and
 [Store.make_persistent] access the database when called. An access that
 fails because the file is not set yet does not break the value: the next
-access tries again. Each access uses the file set when it is made.
+access tries again. The file is read when an access is made, not later in
+the thread that runs it. Set it once: a table is created once per program,
+so changing the file afterwards is not supported.
 
 {[
 let () =
