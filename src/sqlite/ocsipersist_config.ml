@@ -9,13 +9,14 @@ let parse_global_config = function
            "Unexpected content inside Ocsipersist config")
 
 let init config =
-  Ocsipersist_settings.db_file := parse_global_config config;
+  let file = parse_global_config config in
+  Ocsipersist_settings.set_db_file file;
   try Ocsipersist.init ()
   with e ->
     Ocsigen.Messages.errlog
       (Printf.sprintf
          "Error opening database file '%s' when registering Ocsipersist. Check that the directory exists, and that Ocsigen has enough rights"
-         !Ocsipersist_settings.db_file);
+         file);
     raise e
 
 let () = Ocsigen.Extensions.register ~name:"ocsipersist" ~init_fun:init ()

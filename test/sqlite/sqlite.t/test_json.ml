@@ -5,7 +5,9 @@ open Lwt.Syntax
 
 type user = {name : string; age : int} [@@deriving json]
 
-let () = Ocsipersist.init ()
+let () =
+  Ocsipersist_settings.set_db_file "ocsidb";
+  Ocsipersist.init ()
 
 let main () =
   (* Test Ref_json *)

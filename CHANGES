@@ -11,6 +11,15 @@ Breaking changes:
   directory unless the configuration gives one. Without it, ocsidbm writes
   its errors to the standard error of the server. This needs Ocsigen Server
   8.1, whose `Messages.error_log_path` returns an option.
+* In library mode (without a configuration file), there are no default
+  paths anymore. The SQLite database file must be set with
+  `Ocsipersist_settings.set_db_file`, and the DBM store directory with
+  `Ocsipersist_settings.set_store`. Otherwise `Ocsipersist.init` (or, with
+  SQLite, the first use of a store) fails with an error naming the setter,
+  instead of using `ocsidb` or `ocsipersist-store` in the current directory.
+  Without `Ocsipersist_settings.set_error_log_path`, ocsidbm writes its
+  errors to the standard error of the program, instead of
+  `ocsipersist-errors`.
 
 ## 3.1.2 (2026-09-27)
 

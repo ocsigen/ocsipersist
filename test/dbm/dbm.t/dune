@@ -1,7 +1,14 @@
 (executable
  (name test)
+ (modules test)
  (libraries ocsipersist ocsipersist-dbm))
 
 (executable
  (name test_multi)
+ (modules test_multi)
  (libraries ocsipersist ocsipersist-dbm lwt.unix))
+
+(executable
+ (name test_no_store)
+ (modules test_no_store)
+ (libraries ocsipersist ocsipersist-dbm))

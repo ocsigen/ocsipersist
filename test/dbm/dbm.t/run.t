@@ -19,3 +19,11 @@ in the parent. Both connect to the same ocsidbm and share data.
   writer: data written, waiting for reader
   reader: x=hello, y=world
   writer: done
+
+In library mode, the store directory must be set: there is no default.
+Without it, Ocsipersist.init fails with a clear error, also when the
+connection to ocsidbm is delayed:
+
+  $ dune exec -- ./test_no_store.exe
+  init: Ocsipersist: no store directory. Call Ocsipersist_settings.set_store before Ocsipersist.init, or, with Ocsigen Server's configuration file, give <store dir="..."/> to ocsipersist-dbm-config.
+  init with delay_loading: Ocsipersist: no store directory. Call Ocsipersist_settings.set_store before Ocsipersist.init, or, with Ocsigen Server's configuration file, give <store dir="..."/> to ocsipersist-dbm-config.

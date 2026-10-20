@@ -26,6 +26,7 @@ Example of use from the toplevel:
 # #require "lwt_ppx";;
 (* #thread;; if you are using OCaml < 5.0.0 *)
 # #require "ocsipersist-sqlite";;
+# Ocsipersist_settings.set_db_file "ocsidb";;
 # Ocsipersist.init ();;
 # let r = Ocsipersist.Ref.ref ~persistent:"r" 444;;
 val r : int Ocsipersist.Ref.t = <abstr>

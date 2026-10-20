@@ -1,6 +1,8 @@
 open Lwt.Syntax
 
-let () = Ocsipersist.init ()
+let () =
+  Ocsipersist_settings.set_db_file "ocsidb";
+  Ocsipersist.init ()
 let r = Ocsipersist.Ref.ref ~persistent:"r" 0
 
 let main () =

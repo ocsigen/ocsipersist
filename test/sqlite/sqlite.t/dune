@@ -1,23 +1,36 @@
 (executable
  (name test)
  (modules test)
- (libraries ocsipersist ocsipersist-sqlite))
+ (libraries ocsipersist ocsipersist-sqlite ocsipersist-sqlite.settings))
 
 (executable
  (name test_functorial)
  (modules test_functorial)
- (libraries ocsipersist ocsipersist-sqlite))
+ (libraries ocsipersist ocsipersist-sqlite ocsipersist-sqlite.settings))
 
 (executable
  (name test_json)
  (modules test_json)
- (libraries ocsipersist ocsipersist-sqlite js_of_ocaml.deriving)
+ (libraries
+  ocsipersist
+  ocsipersist-sqlite
+  ocsipersist-sqlite.settings
+  js_of_ocaml.deriving)
  (preprocess
   (pps js_of_ocaml-ppx_deriving_json)))
 
 (executable
  (name test_decoding_error)
  (modules test_decoding_error)
- (libraries ocsipersist ocsipersist-sqlite js_of_ocaml.deriving)
+ (libraries
+  ocsipersist
+  ocsipersist-sqlite
+  ocsipersist-sqlite.settings
+  js_of_ocaml.deriving)
  (preprocess
   (pps js_of_ocaml-ppx_deriving_json)))
+
+(executable
+ (name test_no_db_file)
+ (modules test_no_db_file)
+ (libraries ocsipersist ocsipersist-sqlite lwt.unix))

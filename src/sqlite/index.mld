@@ -8,7 +8,16 @@ This page describes how to configure the SQLite backend.
 
 If you are not using Ocsigen Server's configuration file,
 add library [ocsipersist-sqlite.settings] in your Dune file, and
-use module {!Ocsipersist_settings} to configure the storage file. 
+use module {!Ocsipersist_settings} to configure the storage file.
+The database file is required: there is no default. Set it before
+[Ocsipersist.init ()] or the first use of a store, otherwise they fail
+with an error asking for it. The directory of the file must exist.
+
+{[
+let () =
+  Ocsipersist_settings.set_db_file "data/ocsidb";
+  Ocsipersist.init ()
+]}
 
 
 {1 Using with Ocsigen Server: ocsipersist-sqlite-config}

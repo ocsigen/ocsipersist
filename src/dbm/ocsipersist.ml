@@ -16,8 +16,8 @@ let socketname = "socket"
 module Config = Ocsipersist_settings
 
 module Db = struct
-  let launch_ocsidbm () =
-    let param = [|!Config.ocsidbm; !Config.directory|] in
+  let launch_ocsidbm directory =
+    let param = [|!Config.ocsidbm; directory|] in
     let log =
       Option.map
         (fun path ->
@@ -35,7 +35,8 @@ module Db = struct
     (* ocsidbm detaches itself via setsid; we just need to reap the child *)
     ignore (Unix.waitpid [Unix.WNOHANG] pid : int * Unix.process_status)
 
-  let try_connect sname =
+  let try_connect directory =
+    let sname = Filename.concat directory socketname in
     Lwt.catch
       (fun () ->
          let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
@@ -44,16 +45,16 @@ module Db = struct
       (fun _ ->
          Logs.warn ~src:section (fun fmt ->
            fmt "Launching a new Ocsidbm process: %s on directory %s."
-             !Config.ocsidbm !Config.directory);
-         launch_ocsidbm ();
+             !Config.ocsidbm directory);
+         launch_ocsidbm directory;
          Lwt_unix.sleep 1.1 >>= fun () ->
          let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
          Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
          Lwt.return socket)
 
-  let rec get_indescr i =
+  let rec get_indescr directory i =
     Lwt.catch
-      (fun () -> try_connect (!Config.directory ^ "/" ^ socketname))
+      (fun () -> try_connect directory)
       (fun e ->
          if i = 0
          then (
@@ -67,7 +68,7 @@ module Db = struct
                      a b c
                | _ -> Printexc.to_string e));
            Lwt.fail e)
-         else Lwt_unix.sleep 2.1 >>= fun () -> get_indescr (i - 1))
+         else Lwt_unix.sleep 2.1 >>= fun () -> get_indescr directory (i - 1))
 
   let send =
     let previous = ref (Lwt.return Ok) in
@@ -355,12 +356,14 @@ type 'value table = 'value Polymorphic.table
 *)
 
 let init () =
+  (* Fails now if the directory is not set, even with [delay_loading]. *)
+  let directory = Ocsipersist_settings.get_store () in
   if !Ocsipersist_settings.delay_loading
   then
     Logs.warn ~src:section (fun fmt ->
       fmt "Asynchronuous initialization (may fail later)")
   else Logs.warn ~src:section (fun fmt -> fmt "Initializing ...");
-  let indescr = Db.get_indescr 2 in
+  let indescr = Db.get_indescr directory 2 in
   if !Ocsipersist_settings.delay_loading
   then (
     Ocsipersist_settings.inch :=
