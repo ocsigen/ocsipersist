@@ -155,8 +155,8 @@
 
       </nav>
       <article class="rightcol">
-        <header class="odoc-preamble"><h1>Module <code><span>Ocsipersist_settings</span></code></h1></header>
-        <div class="odoc-content"><div class="odoc-spec"><div class="spec value anchored" id="val-set_db_file"><code><span><span class="keyword">val</span> set_db_file : <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div></div>
+        <header class="odoc-preamble"><h1>Module <code><span>Ocsipersist_settings</span></code></h1><p>Settings of the SQLite backend, for programs that do not use Ocsigen Server's configuration file.</p></header>
+        <div class="odoc-content"><div class="odoc-spec"><div class="spec value anchored" id="val-set_db_file"><code><span><span class="keyword">val</span> set_db_file : <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div><div class="spec-doc"><p><code>set_db_file file</code> sets the database file. It is required: there is no default. The directory of <code>file</code> must exist. Set it before <code>Ocsipersist.init ()</code> or the first use of a store.</p></div></div></div>
       </article>
     </div>
   </div>

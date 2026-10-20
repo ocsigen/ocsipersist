@@ -43,7 +43,13 @@ SQLite backend for Ocsipersist. For the API documentation see OPAM package [ocsi
 
 ## Using as a library
 
-If you are not using Ocsigen Server's configuration file, add library `ocsipersist-sqlite.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file.
+If you are not using Ocsigen Server's configuration file, add library `ocsipersist-sqlite.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file. The database file is required: there is no default. Set it before `Ocsipersist.init ()` or the first use of a store, otherwise they fail with an error asking for it. The directory of the file must exist.
+
+```ocaml
+let () =
+  Ocsipersist_settings.set_db_file "data/ocsidb";
+  Ocsipersist.init ()
+```
 
 ## Using with Ocsigen Server: ocsipersist-sqlite-config
 
@@ -58,7 +64,13 @@ DBM backend for Ocsipersist. For the API documentation see OPAM package [ocsiper
 
 ## Using as a library
 
-If you are not using Ocsigen Server's configuration file, add library `ocsipersist-dbm.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage file.
+If you are not using Ocsigen Server's configuration file, add library `ocsipersist-dbm.settings` in your Dune file, and use module [`Ocsipersist_settings`](./Ocsipersist_settings.md) to configure the storage directory. The directory is required: there is no default. Set it before `Ocsipersist.init ()`, otherwise it fails with an error asking for it. By default, ocsidbm writes its errors to the standard error of the program; [`Ocsipersist_settings.set_error_log_path`](./Ocsipersist_settings.md#val-set_error_log_path) sends them to a file instead.
+
+```ocaml
+let () =
+  Ocsipersist_settings.set_store "data/store";
+  Ocsipersist.init ()
+```
 
 ## Using with Ocsigen Server: ocsipersist-dbm-config
 
@@ -154,6 +166,7 @@ Example of use from the toplevel:
 # #require "lwt_ppx";;
 (* #thread;; if you are using OCaml < 5.0.0 *)
 # #require "ocsipersist-sqlite";;
+# Ocsipersist_settings.set_db_file "ocsidb";;
 # Ocsipersist.init ();;
 # let r = Ocsipersist.Ref.ref ~persistent:"r" 444;;
 val r : int Ocsipersist.Ref.t = <abstr>
@@ -354,18 +367,27 @@ type answer =
 
 # Module `Ocsipersist_settings`
 
+Settings of the DBM backend, for programs that do not use Ocsigen Server's configuration file. Set them before `Ocsipersist.init ()`.
+
 ```ocaml
 val set_store : string -> unit
 ```
+`set_store dir` sets the directory of the database. It is required: there is no default. ocsidbm creates `dir` if it does not exist.
+
 ```ocaml
 val set_delay_loading : bool -> unit
 ```
+`set_delay_loading true` makes `Ocsipersist.init ()` connect to ocsidbm in the background instead of waiting for it. Defaults to `false`.
+
 ```ocaml
 val set_ocsidbm : string -> unit
 ```
+`set_ocsidbm prog` sets the ocsidbm program to launch. Defaults to `"ocsidbm"`, looked up in `PATH`.
+
 ```ocaml
 val set_error_log_path : string -> unit
 ```
+`set_error_log_path file` makes ocsidbm write its errors to `file`. By default, it writes them to the standard error of the program.
 
 
 ---
@@ -2392,9 +2414,12 @@ val set_connexion_pool_size : int -> unit
 
 # Module `Ocsipersist_settings`
 
+Settings of the SQLite backend, for programs that do not use Ocsigen Server's configuration file.
+
 ```ocaml
 val set_db_file : string -> unit
 ```
+`set_db_file file` sets the database file. It is required: there is no default. The directory of `file` must exist. Set it before `Ocsipersist.init ()` or the first use of a store.
 
 
 ---
