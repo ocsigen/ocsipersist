@@ -4,9 +4,9 @@ Breaking changes:
 * The configuration-file extensions no longer use Ocsigen Server's
   `<datadir>`, which is going away. `ocsipersist-dbm-config` now requires
   `<store dir="..."/>`, and `ocsipersist-sqlite-config` requires
-  `<database file="..."/>`. Without it, the server refuses to start with a
-  clear error, instead of storing the data in a directory chosen when Ocsigen
-  Server was built.
+  `<database file="..."/>`. Without the tag, the server refuses to start
+  with a clear error, instead of storing the data in a directory chosen when
+  Ocsigen Server was built.
 
 ## 3.1.2 (2026-09-27)
 
