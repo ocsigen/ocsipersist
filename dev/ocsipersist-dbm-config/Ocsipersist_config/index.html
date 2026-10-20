@@ -155,7 +155,7 @@
 
       </nav>
       <article class="rightcol">
-        <header class="odoc-preamble"><h1>Module <code><span>Ocsipersist_config</span></code></h1><p>If you are using the DBM backend of Ocsipersist with Ocsigen Server with a configuration file, install package <code>ocsipersist-dbm-config</code> and use the following configuration tags. All sub-tags of the <code>extension</code> tag are optional.</p><pre class="language-xml"><code>&lt;extension findlib-package=&quot;ocsipersist-dbm-config&quot;&gt;
+        <header class="odoc-preamble"><h1>Module <code><span>Ocsipersist_config</span></code></h1><p>If you are using the DBM backend of Ocsipersist with Ocsigen Server with a configuration file, install package <code>ocsipersist-dbm-config</code> and use the following configuration tags. <code>&lt;store&gt;</code> is required: it gives the directory of the database. The other sub-tags of the <code>extension</code> tag are optional.</p><pre class="language-xml"><code>&lt;extension findlib-package=&quot;ocsipersist-dbm-config&quot;&gt;
   &lt;delayloading val=&quot;false&quot;/&gt;
   &lt;store dir=&quot;store&quot;/&gt;
   &lt;ocsidbm name=&quot;ocsidbm&quot;/&gt;
