@@ -8,9 +8,12 @@ database file. The server refuses to start without it.
   $ grep -o 'Ocsipersist: .*' out.log
   Ocsipersist: <database file="..."/> is missing. It gives the database file (Ocsigen Server's <datadir> is no longer used).
 
-With it, the server starts. It is stopped through its command pipe.
+With it, the server starts and opens the database file. It is stopped through
+its command pipe.
 
   $ ./_build/default/test.exe database.conf >out.log 2>&1 &
-  $ while [ ! -p local.cmd ]; do sleep 0.01; done
-  $ echo shutdown >local.cmd; wait; echo "exit $?"
+  $ server=$!
+  $ while [ ! -p local.cmd ] && kill -0 $server 2>/dev/null; do sleep 0.01; done
+  $ echo shutdown >local.cmd; wait $server; echo "exit $?"
   exit 0
+  $ test -f ocsidb
