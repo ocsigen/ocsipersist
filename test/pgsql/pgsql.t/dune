@@ -1,3 +1,9 @@
 (executable
  (name test)
+ (modules test pg_env)
  (libraries ocsipersist ocsipersist-pgsql))
+
+(executable
+ (name test_modify_opt)
+ (modules test_modify_opt pg_env modify_opt_race)
+ (libraries ocsipersist ocsipersist-pgsql unix))
