@@ -29,10 +29,16 @@ module Aux = struct
   let db_conn : Sqlite3.db option ref = ref None
   let db_conn_file = ref ""
 
+  (* How long SQLite waits, in milliseconds, for a database locked by another
+     process before it answers BUSY. The callers then try again: the wait
+     only avoids retrying in a busy loop. *)
+  let busy_timeout_ms = 5000
+
   (* [get_db file] is a connection to [file], reopened when the file changes. *)
   let get_db file =
     let open_db () =
       let db = db_open file in
+      busy_timeout db busy_timeout_ms;
       db_conn := Some db;
       db_conn_file := file;
       db
@@ -71,12 +77,26 @@ module Aux = struct
    * Langage compris par SQLite : http://www.sqlite.org/lang.html
    *)
 
+  exception Busy
+
+  (* What to do when a step answers BUSY/LOCKED: retry, or, inside an
+     explicit transaction, raise [Busy]. SQLite may have rolled back the
+     transaction then, so retrying the statement alone is not safe: the
+     whole transaction must be rolled back and run again. COMMIT is the
+     exception, and can be retried. *)
+  let on_busy ~in_transaction stmt retry =
+    if in_transaction
+    then (
+      ignore (finalize stmt : Rc.t);
+      raise Busy)
+    else (yield (); retry ())
+
   (* Step a statement until DONE, retrying on BUSY/LOCKED. *)
-  let step_until_done stmt =
+  let step_until_done ?(in_transaction = false) stmt =
     let rec aux () =
       match step stmt with
       | Rc.DONE -> ignore (finalize stmt : Rc.t)
-      | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
+      | Rc.BUSY | Rc.LOCKED -> on_busy ~in_transaction stmt aux
       | rc ->
           ignore (finalize stmt : Rc.t);
           failwith (Rc.to_string rc)
@@ -85,7 +105,7 @@ module Aux = struct
 
   (* Step a statement expecting one ROW, extract a value from it.
      Raises Not_found if the query returns no rows. *)
-  let step_one_row stmt f =
+  let step_one_row ?(in_transaction = false) stmt f =
     let rec aux () =
       match step stmt with
       | Rc.ROW ->
@@ -95,12 +115,26 @@ module Aux = struct
       | Rc.DONE ->
           ignore (finalize stmt : Rc.t);
           raise Not_found
-      | Rc.BUSY | Rc.LOCKED -> yield (); aux ()
+      | Rc.BUSY | Rc.LOCKED -> on_busy ~in_transaction stmt aux
       | rc ->
           ignore (finalize stmt : Rc.t);
           failwith (Rc.to_string rc)
     in
     aux ()
+
+  (* ROLLBACK fails if SQLite has already rolled back the transaction, after
+     some errors, and the binding cannot tell whether a transaction is
+     open. Closing the connection rolls back its transaction, if any. The
+     next access opens the file again. *)
+  let rollback db =
+    try step_until_done (prepare db "ROLLBACK")
+    with Failure msg | Sqlite3.Error msg ->
+      Logs.warn ~src:section (fun fmt ->
+        fmt
+          "Rollback failed (the transaction may be rolled back already), closing the database: %s"
+          msg);
+      close_safely db;
+      db_conn := None
 
   let db_create table =
     let sql =
@@ -210,23 +244,24 @@ module Functorial = struct
     let with_table f =
       Ocsipersist_lib.Lazy_lwt.force init >>= fun () -> Aux.exec_safely f
 
-    let db_get key db =
+    let db_get ?in_transaction key db =
       let sqlget = sprintf "SELECT value FROM %s WHERE key = :key" name in
       let stmt = Aux.bind_safely (prepare db sqlget) [Key.encode key, ":key"] in
-      Value.decode @@ Aux.step_one_row stmt (fun stmt -> column stmt 0)
+      Value.decode
+      @@ Aux.step_one_row ?in_transaction stmt (fun stmt -> column stmt 0)
 
-    let db_replace key value db =
+    let db_replace ?in_transaction key value db =
       let sqlreplace = sprintf "INSERT INTO %s VALUES (:key, :value)" name in
       let stmt =
         Aux.bind_safely (prepare db sqlreplace)
           [Key.encode key, ":key"; Value.encode value, ":value"]
       in
-      Aux.step_until_done stmt
+      Aux.step_until_done ?in_transaction stmt
 
-    let db_remove key db =
+    let db_remove ?in_transaction key db =
       let sql = sprintf "DELETE FROM %s WHERE key = :key " name in
       let stmt = Aux.bind_safely (prepare db sql) [Key.encode key, ":key"] in
-      Aux.step_until_done stmt
+      Aux.step_until_done ?in_transaction stmt
 
     let db_length table db =
       let sql = sprintf "SELECT count (1) FROM %s " table in
@@ -290,12 +325,38 @@ module Functorial = struct
 
     let remove key = with_table @@ db_remove key
 
-    let modify_opt key f =
-      with_table @@ fun db ->
-      let old_value = try Some (db_get key db) with Not_found -> None in
-      match f old_value with
-      | Some new_value -> db_replace key new_value db
-      | None -> db_remove key db
+    (* The mutex of [exec_safely] serialises the accesses of this process,
+       and the transaction those of other processes. It is immediate so that
+       it takes the write lock before reading. If a statement is BUSY in the
+       transaction, the transaction is run again, with the mutex released in
+       between. *)
+    let modify key f =
+      let in_transaction = true in
+      let transaction db =
+        Aux.step_until_done (prepare db "BEGIN IMMEDIATE");
+        match
+          let old_value =
+            try Some (db_get ~in_transaction key db) with Not_found -> None
+          in
+          let new_value, result = f old_value in
+          (match new_value with
+          | Some new_value -> db_replace ~in_transaction key new_value db
+          | None -> db_remove ~in_transaction key db);
+          Aux.step_until_done (prepare db "COMMIT");
+          result
+        with
+        | result -> Some result
+        | exception Aux.Busy -> Aux.rollback db; None
+        | exception e -> Aux.rollback db; raise e
+      in
+      let rec attempt () =
+        with_table transaction >>= function
+        | Some result -> Lwt.return result
+        | None -> attempt ()
+      in
+      attempt ()
+
+    let modify_opt key f = modify key (fun v -> f v, ())
 
     let fold ?count ?gt ?geq ?lt ?leq f beg =
       let i = ref 0L in

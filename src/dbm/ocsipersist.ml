@@ -107,6 +107,13 @@ module Db = struct
     | Error e -> Lwt.fail e
     | _ -> Lwt.fail Ocsipersist_error
 
+  let replace_if_unchanged (store, name) ~expected value =
+    send (Replace_if_unchanged (store, name, expected, value)) >>= function
+    | Ok -> Lwt.return `Written
+    | Changed current -> Lwt.return (`Changed current)
+    | Error e -> Lwt.fail e
+    | _ -> Lwt.fail Ocsipersist_error
+
   let firstkey store =
     send (Firstkey store) >>= function
     | Key k -> Lwt.return (Some k)
@@ -247,14 +254,25 @@ module Functorial = struct
       failwith
         "iter_block not implemented for DBM. Please use Ocsipersist with sqlite"
 
-    let modify_opt key f =
+    (* [f] runs in this process, between two requests to ocsidbm. The result
+       is written only if the value has not changed meanwhile, otherwise [f]
+       is applied again to the new value, which ocsidbm sends back. *)
+    let modify key f =
+      let key = name, Key.encode key in
+      let rec attempt old_value =
+        let new_value, result = f (Option.map Value.decode old_value) in
+        Db.replace_if_unchanged key ~expected:old_value
+          (Option.map Value.encode new_value)
+        >>= function
+        | `Written -> Lwt.return result
+        | `Changed current -> attempt current
+      in
       Lwt.catch
-        (fun () -> find key >>= fun v -> Lwt.return_some v)
-        (function Not_found -> Lwt.return_none | _ -> assert false)
-      >>= fun old_value ->
-      match f old_value with
-      | None -> remove key
-      | Some new_value -> replace_if_exists key new_value
+        (fun () -> Db.get key >>= Lwt.return_some)
+        (function Not_found -> Lwt.return_none | e -> Lwt.fail e)
+      >>= attempt
+
+    let modify_opt key f = modify key (fun v -> f v, ())
 
     let length () =
       (* for DBM the result may be less than the actual lengeth *)

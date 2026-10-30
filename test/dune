@@ -4,7 +4,8 @@
   (applies_to sqlite)
   (package ocsipersist-sqlite)
   (deps
-   (package ocsipersist-sqlite)))
+   (package ocsipersist-sqlite)
+   %{project_root}/test/common/modify_opt_race.ml))
  (cram
   (applies_to config)
   (package ocsipersist-sqlite-config)
@@ -22,7 +23,8 @@
   (enabled_if
    (= %{env:OCSIPERSIST_TEST_PGSQL=false} true))
   (deps
-   (package ocsipersist-pgsql))))
+   (package ocsipersist-pgsql)
+   %{project_root}/test/common/modify_opt_race.ml)))
 
 (subdir
  dbm
@@ -30,7 +32,8 @@
   (applies_to dbm)
   (package ocsipersist-dbm)
   (deps
-   (package ocsipersist-dbm)))
+   (package ocsipersist-dbm)
+   %{project_root}/test/common/modify_opt_race.ml))
  (cram
   (applies_to config)
   (package ocsipersist-dbm-config)
