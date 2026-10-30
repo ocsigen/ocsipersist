@@ -23,7 +23,8 @@
   (enabled_if
    (= %{env:OCSIPERSIST_TEST_PGSQL=false} true))
   (deps
-   (package ocsipersist-pgsql))))
+   (package ocsipersist-pgsql)
+   %{project_root}/test/common/modify_opt_race.ml)))
 
 (subdir
  dbm

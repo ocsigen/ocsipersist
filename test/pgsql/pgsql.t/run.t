@@ -1,5 +1,10 @@
 Test Functorial.length and Ref with a local ephemeral PostgreSQL instance.
 
+The test of modify_opt is shared by the backends: copy it here first, since
+the dune file of this directory refers to it:
+
+  $ cp ../../common/modify_opt_race.ml .
+
 Set up a temporary PostgreSQL cluster:
 
   $ PGBINDIR=$(pg_config --bindir)
@@ -20,6 +25,18 @@ fail, and work after it:
   iter keys: a,b,c
   length after remove: 2
   ref after init: 1
+
+modify_opt creates, removes, and leaves the value unchanged when f raises.
+Two processes of four threads each increment a counter with modify_opt at
+the same time, and no increment is lost:
+
+  $ dune exec -- ./test_modify_opt.exe
+  created: new
+  created: absent
+  modify_opt: f failed
+  kept: v
+  expected counter: 400
+  counter: 400
 
 Tear down:
 

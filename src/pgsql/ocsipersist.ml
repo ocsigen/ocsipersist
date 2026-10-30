@@ -42,14 +42,18 @@ let connect () =
 
 let ( >> ) f g = f >>= fun _ -> g
 
+(* A connection may be closed twice: closing it again fails, and the error
+   of the first closing does not matter. The pool replaces a closed
+   connection, since [PGOCaml.alive] pings it. *)
+let close_quietly db =
+  Lwt.catch (fun () -> PGOCaml.close db) (fun _ -> Lwt.return_unit)
+
 let conn_pool : (string, unit) Hashtbl.t PGOCaml.t Lwt_pool.t ref =
-  let dispose db =
-    Lwt.catch (fun () -> PGOCaml.close db) (fun _ -> Lwt.return_unit)
-  in
   (* This connection pool will be overwritten by init_fun! *)
   ref
-    (Lwt_pool.create !Config.size_conn_pool ~validate:PGOCaml.alive ~dispose
-       (fun () -> Lwt.fail (Failure "Ocsipersist db not initialised")))
+    (Lwt_pool.create !Config.size_conn_pool ~validate:PGOCaml.alive
+       ~dispose:close_quietly (fun () ->
+       Lwt.fail (Failure "Ocsipersist db not initialised")))
 
 let use_pool f =
   Lwt_pool.use !conn_pool @@ fun db ->
@@ -59,10 +63,10 @@ let use_pool f =
       | PGOCaml.Error msg as e ->
           Logs.err ~src:section (fun fmt ->
             fmt "postgresql protocol error: %s" msg);
-          PGOCaml.close db >>= fun () -> Lwt.fail e
+          close_quietly db >>= fun () -> Lwt.fail e
       | Lwt.Canceled as e ->
           Logs.err ~src:section (fun fmt -> fmt "thread canceled");
-          PGOCaml.close db >>= fun () -> Lwt.fail e
+          close_quietly db >>= fun () -> Lwt.fail e
       | e -> Lwt.fail e)
 
 (* escapes characters that are not in the range of 0x20..0x7e;
@@ -231,35 +235,67 @@ module Functorial = struct
       let query = sprintf "DELETE FROM %s WHERE key = $1" name in
       Aux.exec_ db query [Key.encode key]
 
+    (* The advisory lock on the table and the key serialises the calls to
+       [modify_opt], also while the key is absent. [FOR UPDATE] makes the
+       other writes of an existing entry wait for the end of the
+       transaction. If an [add] inserts the absent key meanwhile, the
+       insertion does nothing, and [f] is applied again to the value now
+       found. This needs READ COMMITTED, where each statement sees the rows
+       committed before it. The lock shares its key space with the other
+       advisory locks of the database: a collision only makes unrelated
+       calls wait for each other. *)
     let modify_opt key f =
       with_table @@ fun db ->
-      Aux.exec_ db "BEGIN" [] >>= fun () ->
+      let rec attempt () =
+        let query =
+          sprintf "SELECT value FROM %s WHERE key = $1 FOR UPDATE" name
+        in
+        Aux.exec db query [Key.encode key] >>= fun value ->
+        let old_value =
+          match value with [Some v] :: _ -> Some (Value.decode v) | _ -> None
+        in
+        match old_value, f old_value with
+        | Some _, Some new_value ->
+            let query =
+              sprintf "UPDATE %s SET value = $2 WHERE key = $1" name
+            in
+            Aux.exec_ db query (Aux.encode_pair key new_value)
+        | None, Some new_value -> (
+            let query =
+              sprintf
+                "INSERT INTO %s VALUES ($1, $2) ON CONFLICT (key) DO NOTHING
+                 RETURNING 0"
+                name
+            in
+            Aux.exec db query (Aux.encode_pair key new_value) >>= function
+            | [] -> attempt ()
+            | _ -> Lwt.return_unit)
+        | Some _, None ->
+            let query = sprintf "DELETE FROM %s WHERE key = $1" name in
+            Aux.exec_ db query [Key.encode key]
+        | None, None -> Lwt.return_unit
+      in
+      Aux.exec_ db "BEGIN ISOLATION LEVEL READ COMMITTED" [] >>= fun () ->
       Lwt.catch
         (fun () ->
-           let query = sprintf "SELECT value FROM %s WHERE key = $1" name in
-           Aux.exec db query [Key.encode key] >>= fun value ->
-           let old_value =
-             match value with
-             | [Some v] :: _ -> Some (Value.decode v)
-             | _ -> None
-           in
-           (match f old_value with
-             | Some new_value ->
-                 let query =
-                   sprintf
-                     "INSERT INTO %s VALUES ($1, $2)
-                     ON CONFLICT (key) DO UPDATE SET value = $2"
-                     name
-                 in
-                 Aux.exec_ db query @@ Aux.encode_pair key new_value
-             | None -> (
-               match old_value with
-               | Some _ ->
-                   let query = sprintf "DELETE FROM %s WHERE key = $1" name in
-                   Aux.exec_ db query [Key.encode key]
-               | None -> Lwt.return_unit))
-           >>= fun () -> Aux.exec_ db "COMMIT" [])
-        (fun e -> Aux.exec_ db "ROLLBACK" [] >>= fun () -> Lwt.fail e)
+           Aux.exec_ db
+             "SELECT pg_advisory_xact_lock (hashtext ($1), hashtext ($2))"
+             [name; Key.encode key]
+           >>= fun () ->
+           attempt () >>= fun () -> Aux.exec_ db "COMMIT" [])
+        (fun e ->
+           (* A connection whose rollback failed may still be in the
+              transaction: it is closed, and the pool replaces it. *)
+           Lwt.catch
+             (fun () -> Aux.exec_ db "ROLLBACK" [])
+             (fun rollback_error ->
+                Logs.err ~src:section (fun fmt ->
+                  fmt
+                    "Ocsipersist.modify_opt failed with %s, then rollback failed with %s"
+                    (Printexc.to_string e)
+                    (Printexc.to_string rollback_error));
+                close_quietly db)
+           >>= fun () -> Lwt.fail e)
 
     let length () =
       with_table @@ fun db ->
