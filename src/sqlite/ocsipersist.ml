@@ -29,10 +29,16 @@ module Aux = struct
   let db_conn : Sqlite3.db option ref = ref None
   let db_conn_file = ref ""
 
+  (* How long SQLite waits, in milliseconds, for a database locked by another
+     process before it answers BUSY. The callers then try again: the wait
+     only avoids retrying in a busy loop. *)
+  let busy_timeout_ms = 5000
+
   (* [get_db file] is a connection to [file], reopened when the file changes. *)
   let get_db file =
     let open_db () =
       let db = db_open file in
+      busy_timeout db busy_timeout_ms;
       db_conn := Some db;
       db_conn_file := file;
       db
