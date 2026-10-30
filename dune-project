@@ -1,6 +1,6 @@
 (lang dune 3.18)
 (name ocsipersist)
-(version 3.2.0~dev)
+(version 3.2.0)
 
 (generate_opam_files true)
 (cram enable)
@@ -43,7 +43,7 @@
  (depends
   (ocsipersist-dbm (= :version))
   ; Messages.error_log_path returns an option since 8.1.
-  (ocsigenserver (and (>= 8.1.0~dev) (< 9.0.0)))
+  (ocsigenserver (and (>= 8.1.0) (< 9.0.0)))
   xml-light))
 
 (package
