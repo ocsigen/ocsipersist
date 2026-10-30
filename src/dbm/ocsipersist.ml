@@ -250,11 +250,11 @@ module Functorial = struct
     let modify_opt key f =
       Lwt.catch
         (fun () -> find key >>= fun v -> Lwt.return_some v)
-        (function Not_found -> Lwt.return_none | _ -> assert false)
+        (function Not_found -> Lwt.return_none | e -> Lwt.fail e)
       >>= fun old_value ->
       match f old_value with
       | None -> remove key
-      | Some new_value -> replace_if_exists key new_value
+      | Some new_value -> add key new_value
 
     let length () =
       (* for DBM the result may be less than the actual lengeth *)
