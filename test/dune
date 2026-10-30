@@ -32,7 +32,8 @@
   (applies_to dbm)
   (package ocsipersist-dbm)
   (deps
-   (package ocsipersist-dbm)))
+   (package ocsipersist-dbm)
+   %{project_root}/test/common/modify_opt_race.ml))
  (cram
   (applies_to config)
   (package ocsipersist-dbm-config)

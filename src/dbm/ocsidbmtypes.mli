@@ -26,6 +26,11 @@ type query =
   | Nextkey of string
   | Firstkey of string
   | Length of string
+  | Replace_if_unchanged of string * string * string option * string option
+  (** [Replace_if_unchanged (table, key, expected, value)] binds [key] to
+      [value], or removes it if [value] is [None], only if its value is still
+      [expected] ([None] if absent). The answer is [Ok], or [Changed current]
+      with the current value, and nothing is written. *)
 
 type answer =
   | Ok
@@ -34,3 +39,4 @@ type answer =
   | End
   | Key of string
   | Error of exn
+  | Changed of string option

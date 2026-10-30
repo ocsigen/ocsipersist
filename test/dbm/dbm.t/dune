@@ -19,3 +19,8 @@
  (libraries ocsipersist ocsipersist-dbm js_of_ocaml.deriving)
  (preprocess
   (pps js_of_ocaml-ppx_deriving_json)))
+
+(executable
+ (name test_modify_opt)
+ (modules test_modify_opt modify_opt_race)
+ (libraries ocsipersist ocsipersist-dbm unix))

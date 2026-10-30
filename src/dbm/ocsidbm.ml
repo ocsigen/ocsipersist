@@ -179,6 +179,14 @@ let execute outch =
           db_replace t k v;
           send outch Ok
         with Not_found -> send outch Dbm_not_found)
+  | Replace_if_unchanged (t, k, expected, v) ->
+      handle_errors (fun () ->
+        let current = try Some (db_get t k) with Not_found -> None in
+        if Option.equal String.equal current expected
+        then (
+          (match v with Some v -> db_replace t k v | None -> db_remove t k);
+          send outch Ok)
+        else send outch (Changed current))
   | Firstkey t ->
       handle_errors (fun () ->
         try send outch (Key (db_firstkey t)) with Not_found -> send outch End)

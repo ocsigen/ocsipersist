@@ -1,5 +1,10 @@
 Test Functorial iter_batch with DBM backend and ocsidbm process.
 
+The test of modify_opt is shared by the backends: copy it here first, since
+the dune file of this directory refers to it:
+
+  $ cp ../../common/modify_opt_race.ml .
+
 Set up environment:
 
   $ export OCSIDBM=$(command -v ocsidbm)
@@ -50,3 +55,15 @@ connection to ocsidbm is delayed:
   $ dune exec -- ./test_no_store.exe
   init: Ocsipersist: no store directory. Call Ocsipersist_settings.set_store before Ocsipersist.init, or, with Ocsigen Server's configuration file, give <store dir="..."/> to ocsipersist-dbm-config.
   init with delay_loading: Ocsipersist: no store directory. Call Ocsipersist_settings.set_store before Ocsipersist.init, or, with Ocsigen Server's configuration file, give <store dir="..."/> to ocsipersist-dbm-config.
+
+modify_opt creates, removes, and leaves the value unchanged when f raises.
+Two processes of four threads each increment a counter with modify_opt at
+the same time, and no increment is lost:
+
+  $ dune exec -- ./test_modify_opt.exe
+  created: new
+  created: absent
+  modify_opt: f failed
+  kept: v
+  expected counter: 400
+  counter: 400
