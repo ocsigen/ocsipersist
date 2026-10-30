@@ -55,3 +55,8 @@
  (name test_db_file_reopen)
  (modules test_db_file_reopen)
  (libraries ocsipersist ocsipersist-sqlite ocsipersist-sqlite.settings sqlite3))
+
+(executable
+ (name test_modify_opt)
+ (modules test_modify_opt modify_opt_race)
+ (libraries ocsipersist ocsipersist-sqlite ocsipersist-sqlite.settings unix))

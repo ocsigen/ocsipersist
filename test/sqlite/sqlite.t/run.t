@@ -1,3 +1,8 @@
+The test of modify_opt is shared by the backends: copy it here first, since
+the dune file of this directory refers to it:
+
+  $ cp ../../common/modify_opt_race.ml .
+
 This program will print an incremented number each time:
 
   $ dune exec -- ./test.exe
@@ -86,3 +91,15 @@ connection to the old file is dropped, and the old file can be used again:
   first file: ok
   file that cannot be opened: Sqlite3.Error
   first file again: ok
+
+modify_opt creates, removes, and leaves the value unchanged when f raises.
+Two processes of four threads each increment a counter with modify_opt at
+the same time, and no increment is lost:
+
+  $ dune exec -- ./test_modify_opt.exe
+  created: new
+  created: absent
+  modify_opt: f failed
+  kept: v
+  expected counter: 400
+  counter: 400
