@@ -330,7 +330,7 @@ module Functorial = struct
        it takes the write lock before reading. If a statement is BUSY in the
        transaction, the transaction is run again, with the mutex released in
        between. *)
-    let modify_opt key f =
+    let modify key f =
       let in_transaction = true in
       let transaction db =
         Aux.step_until_done (prepare db "BEGIN IMMEDIATE");
@@ -338,21 +338,25 @@ module Functorial = struct
           let old_value =
             try Some (db_get ~in_transaction key db) with Not_found -> None
           in
-          (match f old_value with
+          let new_value, result = f old_value in
+          (match new_value with
           | Some new_value -> db_replace ~in_transaction key new_value db
           | None -> db_remove ~in_transaction key db);
-          Aux.step_until_done (prepare db "COMMIT")
+          Aux.step_until_done (prepare db "COMMIT");
+          result
         with
-        | () -> true
-        | exception Aux.Busy -> Aux.rollback db; false
+        | result -> Some result
+        | exception Aux.Busy -> Aux.rollback db; None
         | exception e -> Aux.rollback db; raise e
       in
       let rec attempt () =
         with_table transaction >>= function
-        | true -> Lwt.return_unit
-        | false -> attempt ()
+        | Some result -> Lwt.return result
+        | None -> attempt ()
       in
       attempt ()
+
+    let modify_opt key f = modify key (fun v -> f v, ())
 
     let fold ?count ?gt ?geq ?lt ?leq f beg =
       let i = ref 0L in

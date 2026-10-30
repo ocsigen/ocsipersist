@@ -236,15 +236,15 @@ module Functorial = struct
       Aux.exec_ db query [Key.encode key]
 
     (* The advisory lock on the table and the key serialises the calls to
-       [modify_opt], also while the key is absent. [FOR UPDATE] makes the
-       other writes of an existing entry wait for the end of the
-       transaction. If an [add] inserts the absent key meanwhile, the
-       insertion does nothing, and [f] is applied again to the value now
-       found. This needs READ COMMITTED, where each statement sees the rows
-       committed before it. The lock shares its key space with the other
-       advisory locks of the database: a collision only makes unrelated
-       calls wait for each other. *)
-    let modify_opt key f =
+       [modify], also while the key is absent. [FOR UPDATE] makes the other
+       writes of an existing entry wait for the end of the transaction. If
+       an [add] inserts the absent key meanwhile, the insertion does
+       nothing, and [f] is applied again to the value now found. This needs
+       READ COMMITTED, where each statement sees the rows committed before
+       it. The lock shares its key space with the other advisory locks of
+       the database: a collision only makes unrelated calls wait for each
+       other. *)
+    let modify key f =
       with_table @@ fun db ->
       let rec attempt () =
         let query =
@@ -254,12 +254,14 @@ module Functorial = struct
         let old_value =
           match value with [Some v] :: _ -> Some (Value.decode v) | _ -> None
         in
-        match old_value, f old_value with
+        let new_value, result = f old_value in
+        match old_value, new_value with
         | Some _, Some new_value ->
             let query =
               sprintf "UPDATE %s SET value = $2 WHERE key = $1" name
             in
-            Aux.exec_ db query (Aux.encode_pair key new_value)
+            Aux.exec_ db query (Aux.encode_pair key new_value) >>= fun () ->
+            Lwt.return result
         | None, Some new_value -> (
             let query =
               sprintf
@@ -269,11 +271,11 @@ module Functorial = struct
             in
             Aux.exec db query (Aux.encode_pair key new_value) >>= function
             | [] -> attempt ()
-            | _ -> Lwt.return_unit)
+            | _ -> Lwt.return result)
         | Some _, None ->
             let query = sprintf "DELETE FROM %s WHERE key = $1" name in
-            Aux.exec_ db query [Key.encode key]
-        | None, None -> Lwt.return_unit
+            Aux.exec_ db query [Key.encode key] >>= fun () -> Lwt.return result
+        | None, None -> Lwt.return result
       in
       Aux.exec_ db "BEGIN ISOLATION LEVEL READ COMMITTED" [] >>= fun () ->
       Lwt.catch
@@ -282,7 +284,8 @@ module Functorial = struct
              "SELECT pg_advisory_xact_lock (hashtext ($1), hashtext ($2))"
              [name; Key.encode key]
            >>= fun () ->
-           attempt () >>= fun () -> Aux.exec_ db "COMMIT" [])
+           attempt () >>= fun result ->
+           Aux.exec_ db "COMMIT" [] >>= fun () -> Lwt.return result)
         (fun e ->
            (* A connection whose rollback failed may still be in the
               transaction: it is closed, and the pool replaces it. *)
@@ -291,11 +294,13 @@ module Functorial = struct
              (fun rollback_error ->
                 Logs.err ~src:section (fun fmt ->
                   fmt
-                    "Ocsipersist.modify_opt failed with %s, then rollback failed with %s"
+                    "Ocsipersist.modify failed with %s, then rollback failed with %s"
                     (Printexc.to_string e)
                     (Printexc.to_string rollback_error));
                 close_quietly db)
            >>= fun () -> Lwt.fail e)
+
+    let modify_opt key f = modify key (fun v -> f v, ())
 
     let length () =
       with_table @@ fun db ->

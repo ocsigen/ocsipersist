@@ -26,15 +26,24 @@ fail, and work after it:
   length after remove: 2
   ref after init: 1
 
-modify_opt creates, removes, and leaves the value unchanged when f raises.
+modify_opt creates, removes (also an absent key), and leaves the value
+unchanged when f raises. modify returns the result of f.
+When another process adds the key while f runs, f is applied again to the
+new value, and modify returns the result of that call.
 Two processes of four threads each increment a counter with modify_opt at
 the same time, and no increment is lost:
 
   $ dune exec -- ./test_modify_opt.exe
   created: new
   created: absent
+  created: absent
   modify_opt: f failed
   kept: v
+  modify returned: v
+  kept: w
+  f saw: absent, other
+  modify returned: other
+  raced: mine
   expected counter: 400
   counter: 400
 

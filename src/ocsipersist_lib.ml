@@ -22,9 +22,15 @@ module Sigs = struct
         database: it behaves as if no other write of [key] happened between
         the reading and the writing. [f] may be called more than once, each
         time with the value read again, so it must be quick and without
-        side effects. With SQLite, it runs in a system thread holding the
-        lock of the database. If [f] raises an exception, nothing is written
-        and [modify_opt] fails with it. *)
+        side effects. The value written is the result of the last call. With
+        SQLite, [f] runs in a system thread holding the lock of the database.
+        If [f] raises an exception, nothing is written and [modify_opt] fails
+        with it. *)
+
+    val modify : key -> (value option -> value option * 'a) -> 'a Lwt.t
+    (** [modify key f] is like {!modify_opt}, where [f] also gives a result.
+        [modify] returns the result of the call of [f] whose value was
+        written, which a reference set by [f] would not guarantee. *)
 
     val length : unit -> int Lwt.t
 

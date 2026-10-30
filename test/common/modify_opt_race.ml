@@ -27,9 +27,28 @@ let find_opt key =
        Some v)
     (function Not_found -> Lwt.return_none | e -> Lwt.fail e)
 
+let show_value v = Option.value v ~default:"absent"
+
 let show key =
   let+ v = find_opt key in
-  Printf.printf "%s: %s\n%!" key (Option.value v ~default:"absent")
+  Printf.printf "%s: %s\n%!" key (show_value v)
+
+(* [Lwt_main.run] installs a SIGCHLD handler, which can interrupt
+   [waitpid]. *)
+let rec waitpid_restart pid =
+  try snd (Unix.waitpid [] pid)
+  with Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_restart pid
+
+let spawn args =
+  let exe = Sys.executable_name in
+  Unix.create_process exe
+    (Array.of_list (exe :: args))
+    Unix.stdin Unix.stdout Unix.stderr
+
+let wait name pid =
+  match waitpid_restart pid with
+  | Unix.WEXITED 0 -> ()
+  | _ -> Printf.printf "%s failed\n%!" name
 
 let single_process () =
   let* () = T.remove "counter" in
@@ -41,6 +60,8 @@ let single_process () =
   let* () = show "created" in
   let* () = T.modify_opt "created" (fun _ -> None) in
   let* () = show "created" in
+  let* () = T.modify_opt "created" (fun _ -> None) in
+  let* () = show "created" in
   let* () =
     Lwt.catch
       (fun () -> T.modify_opt "kept" (fun _ -> failwith "f failed"))
@@ -48,7 +69,25 @@ let single_process () =
         | Failure msg -> Lwt.return (Printf.printf "modify_opt: %s\n%!" msg)
         | e -> Lwt.fail e)
   in
+  let* () = show "kept" in
+  let* previous = T.modify "kept" (fun v -> Some "w", v) in
+  Printf.printf "modify returned: %s\n%!" (show_value previous);
   show "kept"
+
+(* While [f] runs on an absent key, another process adds it. *)
+let test_add_during_f () =
+  let* () = T.remove "raced" in
+  let seen = ref [] in
+  let* result =
+    T.modify "raced" (fun v ->
+      seen := v :: !seen;
+      if v = None then wait "add" (spawn ["add"; "raced"; "other"]);
+      Some "mine", v)
+  in
+  Printf.printf "f saw: %s\n%!"
+    (String.concat ", " (List.rev_map show_value !seen));
+  Printf.printf "modify returned: %s\n%!" (show_value result);
+  show "raced"
 
 (* Each process runs [threads] threads, each incrementing the counter
    [increments] times. *)
@@ -62,29 +101,17 @@ let worker () =
   in
   Lwt.join (List.init threads (fun _ -> loop increments))
 
-(* [Lwt_main.run] installs a SIGCHLD handler, which can interrupt
-   [waitpid]. *)
-let rec waitpid_restart pid =
-  try snd (Unix.waitpid [] pid)
-  with Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_restart pid
-
-let run () =
+(* With SQLite, [f] runs while holding the lock of the database, so another
+   process cannot add the key meanwhile: [~add_during_f:false]. *)
+let run ~add_during_f =
   match Sys.argv with
   | [|_; "worker"|] -> Lwt_main.run (worker ())
+  | [|_; "add"; key; value|] -> Lwt_main.run (T.add key value)
   | _ ->
       (* The table is created before the workers start. *)
       Lwt_main.run (single_process ());
-      let exe = Sys.executable_name in
-      let pids =
-        List.init processes (fun _ ->
-          Unix.create_process exe [|exe; "worker"|] Unix.stdin Unix.stdout
-            Unix.stderr)
-      in
-      List.iter
-        (fun pid ->
-           match waitpid_restart pid with
-           | Unix.WEXITED 0 -> ()
-           | _ -> print_endline "a worker failed")
-        pids;
+      if add_during_f then Lwt_main.run (test_add_during_f ());
+      let pids = List.init processes (fun _ -> spawn ["worker"]) in
+      List.iter (wait "a worker") pids;
       Printf.printf "expected counter: %d\n" (processes * threads * increments);
       Lwt_main.run (show "counter")

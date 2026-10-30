@@ -257,20 +257,22 @@ module Functorial = struct
     (* [f] runs in this process, between two requests to ocsidbm. The result
        is written only if the value has not changed meanwhile, otherwise [f]
        is applied again to the new value, which ocsidbm sends back. *)
-    let modify_opt key f =
+    let modify key f =
       let key = name, Key.encode key in
       let rec attempt old_value =
-        let new_value =
-          Option.map Value.encode (f (Option.map Value.decode old_value))
-        in
-        Db.replace_if_unchanged key ~expected:old_value new_value >>= function
-        | `Written -> Lwt.return_unit
+        let new_value, result = f (Option.map Value.decode old_value) in
+        Db.replace_if_unchanged key ~expected:old_value
+          (Option.map Value.encode new_value)
+        >>= function
+        | `Written -> Lwt.return result
         | `Changed current -> attempt current
       in
       Lwt.catch
         (fun () -> Db.get key >>= Lwt.return_some)
         (function Not_found -> Lwt.return_none | e -> Lwt.fail e)
       >>= attempt
+
+    let modify_opt key f = modify key (fun v -> f v, ())
 
     let length () =
       (* for DBM the result may be less than the actual lengeth *)

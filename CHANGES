@@ -30,7 +30,15 @@ Breaking changes:
   understand. Before upgrading, stop all the programs using a store, so
   that no older ocsidbm keeps running.
 * The function given to `modify_opt` may be called more than once, with
-  the value read again (DBM, when another write happened meanwhile).
+  the value read again (DBM, when another write happened meanwhile, and
+  SQLite, when the database was busy). The value written is the result of
+  the last call.
+* `TABLE` has a new value, `modify`: an implementation of `TABLE` outside
+  Ocsipersist must define it.
+
+New features:
+* `modify` is like `modify_opt`, where the function also gives a result.
+  `modify` returns the result of the call whose value was written.
 
 Bug fixes:
 * `modify_opt` is atomic, also between processes using the same database.

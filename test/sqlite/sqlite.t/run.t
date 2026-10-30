@@ -92,14 +92,18 @@ connection to the old file is dropped, and the old file can be used again:
   file that cannot be opened: Sqlite3.Error
   first file again: ok
 
-modify_opt creates, removes, and leaves the value unchanged when f raises.
+modify_opt creates, removes (also an absent key), and leaves the value
+unchanged when f raises. modify returns the result of f.
 Two processes of four threads each increment a counter with modify_opt at
 the same time, and no increment is lost:
 
   $ dune exec -- ./test_modify_opt.exe
   created: new
   created: absent
+  created: absent
   modify_opt: f failed
   kept: v
+  modify returned: v
+  kept: w
   expected counter: 400
   counter: 400
