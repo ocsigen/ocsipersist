@@ -26,8 +26,21 @@ Breaking changes:
   looked up, and its default written if it is missing, at the first `get`
   or `set`. A database error is reported there too, and no longer when the
   value is created.
+* DBM: ocsidbm has a new request, which an older ocsidbm does not
+  understand. Before upgrading, stop all the programs using a store, so
+  that no older ocsidbm keeps running.
+* The function given to `modify_opt` may be called more than once, with
+  the value read again (DBM, when another write happened meanwhile).
 
 Bug fixes:
+* `modify_opt` is atomic, also between processes using the same database.
+  Before, two processes could read the same value and the last write won.
+  With PostgreSQL, an entry removed meanwhile could be written again, and
+  with DBM, it was not atomic even within one process.
+* DBM: `modify_opt` creates an entry when the key is absent. It failed
+  with `Not_found`.
+* SQLite: a database locked by another process is waited for, instead of
+  being retried in a busy loop.
 * Persistent values created before the backend is configured, for instance
   when a module is initialised before the program calls
   `Ocsipersist_settings.set_db_file`, or `Ocsipersist.init` with DBM, now

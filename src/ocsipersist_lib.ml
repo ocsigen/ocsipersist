@@ -12,7 +12,20 @@ module Sigs = struct
     val add : key -> value -> unit Lwt.t
     val replace_if_exists : key -> value -> unit Lwt.t
     val remove : key -> unit Lwt.t
+
     val modify_opt : key -> (value option -> value option) -> unit Lwt.t
+    (** [modify_opt key f] replaces the value [v] bound to [key] by [v'] if
+        [f (Some v)] is [Some v'], and removes it if [f (Some v)] is [None].
+        If [key] is not bound, [f None] gives the value to bind, if any.
+
+        The change is atomic, also between processes using the same
+        database: it behaves as if no other write of [key] happened between
+        the reading and the writing. [f] may be called more than once, each
+        time with the value read again, so it must be quick and without
+        side effects. With SQLite, it runs in a system thread holding the
+        lock of the database. If [f] raises an exception, nothing is written
+        and [modify_opt] fails with it. *)
+
     val length : unit -> int Lwt.t
 
     val iter :
