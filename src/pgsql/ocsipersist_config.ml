@@ -12,7 +12,8 @@ let parse_global_config = function
           try Ocsipersist_settings.port := Some (int_of_string p)
           with Failure _ ->
             raise
-            @@ Ocsigen.Extensions.Error_in_config_file "port is not an integer")
+            @@ Ocsigen.Extensions.Error_in_config_file "port is not an integer"
+        )
         | "user", u -> Ocsipersist_settings.user := Some u
         | "password", pw -> Ocsipersist_settings.password := Some pw
         | "database", db -> Ocsipersist_settings.database := db
@@ -23,7 +24,8 @@ let parse_global_config = function
           with Failure _ ->
             raise
             @@ Ocsigen.Extensions.Error_in_config_file
-                 "size_conn_pool is not an integer")
+                 "size_conn_pool is not an integer"
+        )
         | _ ->
             raise
             @@ Ocsigen.Extensions.Error_in_config_file

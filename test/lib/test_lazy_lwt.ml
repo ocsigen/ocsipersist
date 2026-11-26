@@ -9,19 +9,21 @@ let make () =
   let calls = ref 0 and pending = Queue.create () in
   let l =
     Lazy_lwt.make (fun () ->
-      incr calls;
-      let p, u = Lwt.task () in
-      Queue.push u pending; p)
+        incr calls;
+        let p, u = Lwt.task () in
+        Queue.push u pending; p
+    )
   in
   l, calls, pending
 
 let show calls name p =
   Printf.printf "%s: %s (computations: %d)\n" name
-    (match Lwt.state p with
+    ( match Lwt.state p with
     | Lwt.Return v -> Printf.sprintf "fulfilled with %d" v
     | Lwt.Fail Lwt.Canceled -> "cancelled"
     | Lwt.Fail e -> "rejected with " ^ Printexc.to_string e
-    | Lwt.Sleep -> "pending")
+    | Lwt.Sleep -> "pending"
+    )
     !calls
 
 let () =
@@ -47,8 +49,9 @@ let () =
   let calls = ref 0 in
   let l =
     Lazy_lwt.make (fun () ->
-      incr calls;
-      if !calls = 1 then failwith "not configured" else Lwt.return 1)
+        incr calls;
+        if !calls = 1 then failwith "not configured" else Lwt.return 1
+    )
   in
   show calls "first force" (Lazy_lwt.force l);
   show calls "second force" (Lazy_lwt.force l)

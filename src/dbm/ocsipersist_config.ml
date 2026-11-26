@@ -24,14 +24,17 @@ let init_fun config =
   in
   Ocsipersist_settings.delay_loading := delay_loading;
   Ocsipersist_settings.error_log_path := Ocsigen.Messages.error_log_path ();
-  (match store with
+  ( match store with
   | None ->
       Ocsigen.Extensions.badconfig
-        "Ocsipersist: <store dir=\"...\"/> is missing. It gives the directory of the database (Ocsigen Server's <datadir> is no longer used)."
-  | Some d -> Ocsipersist_settings.set_store d);
-  (match ocsidbmconf with
+        "Ocsipersist: <store dir=\"...\"/> is missing. It gives the directory \
+         of the database (Ocsigen Server's <datadir> is no longer used)."
+  | Some d -> Ocsipersist_settings.set_store d
+  );
+  ( match ocsidbmconf with
   | None -> ()
-  | Some d -> Ocsipersist_settings.ocsidbm := d);
+  | Some d -> Ocsipersist_settings.ocsidbm := d
+  );
   Ocsipersist.init ()
 
 let () = Ocsigen.Extensions.register ~name:"ocsipersist" ~init_fun ()

@@ -44,10 +44,10 @@ let errlog s =
 (** Internal functions: storage in files using DBM *)
 
 module Tableoftables = Map.Make (struct
-    type t = string
+  type t = string
 
-    let compare = compare
-  end)
+  let compare = compare
+end)
 
 let tableoftables = ref Tableoftables.empty
 
@@ -59,11 +59,14 @@ let () =
     with Unix.Unix_error (error, _, _) ->
       failwith
         (Printf.sprintf "Ocsidbm: can't create directory %s: %s" directory
-           (Unix.error_message error)))
+           (Unix.error_message error)
+        )
+  )
   | Unix.Unix_error (error, _, _) ->
       failwith
         (Printf.sprintf "Ocsidbm: can't access directory %s: %s" directory
-           (Unix.error_message error))
+           (Unix.error_message error)
+        )
 
 let open_db name =
   let t =
@@ -114,8 +117,9 @@ let db_length t =
   let rec aux f n =
     Lwt.catch
       (fun () ->
-         ignore (f table : string);
-         Lwt.pause () >>= fun () -> aux Dbm.nextkey (n + 1))
+        ignore (f table : string);
+        Lwt.pause () >>= fun () -> aux Dbm.nextkey (n + 1)
+      )
       (function Not_found -> Lwt.return n | e -> Lwt.fail e)
   in
   aux Dbm.firstkey 0
@@ -149,7 +153,8 @@ let sigs =
   ; sigttin
   ; sigttou
   ; sigvtalrm
-  ; sigprof ]
+  ; sigprof
+  ]
 
 let () =
   List.iter (fun s -> Sys.set_signal s (Signal_handle (close_all 0))) sigs
@@ -167,32 +172,40 @@ let execute outch =
   function
   | Get (t, k) ->
       handle_errors (fun () ->
-        try send outch (Value (db_get t k))
-        with Not_found -> send outch Dbm_not_found)
+          try send outch (Value (db_get t k))
+          with Not_found -> send outch Dbm_not_found
+      )
   | Remove (t, k) -> handle_errors (fun () -> db_remove t k; send outch Ok)
   | Replace (t, k, v) ->
       handle_errors (fun () -> db_replace t k v; send outch Ok)
   | Replace_if_exists (t, k, v) ->
       handle_errors (fun () ->
-        try
-          ignore (db_get t k : string);
-          db_replace t k v;
-          send outch Ok
-        with Not_found -> send outch Dbm_not_found)
+          try
+            ignore (db_get t k : string);
+            db_replace t k v;
+            send outch Ok
+          with Not_found -> send outch Dbm_not_found
+      )
   | Firstkey t ->
       handle_errors (fun () ->
-        try send outch (Key (db_firstkey t)) with Not_found -> send outch End)
+          try send outch (Key (db_firstkey t))
+          with Not_found -> send outch End
+      )
   | Nextkey t ->
       handle_errors (fun () ->
-        try send outch (Key (db_nextkey t)) with Not_found -> send outch End)
+          try send outch (Key (db_nextkey t)) with Not_found -> send outch End
+      )
   | Length t ->
       handle_errors (fun () ->
-        Lwt.catch
-          (fun () ->
-             db_length t >>= fun i ->
-             send outch (Value (Marshal.to_string i [])))
-          (function
-            | Not_found -> send outch Dbm_not_found | e -> send outch (Error e)))
+          Lwt.catch
+            (fun () ->
+              db_length t >>= fun i ->
+              send outch (Value (Marshal.to_string i []))
+            )
+            (function
+              | Not_found -> send outch Dbm_not_found | e -> send outch (Error e)
+              )
+      )
 
 let nb_clients = ref 0
 
@@ -210,11 +223,12 @@ let b = ref false
 let rec loop socket =
   Lwt_unix.accept socket >>= fun (indescr, _) ->
   Lwt.async (fun () ->
-    b := true;
-    nb_clients := !nb_clients + 1;
-    let inch = Lwt_io.of_fd ~mode:Lwt_io.input indescr in
-    let outch = Lwt_io.of_fd ~mode:Lwt_io.output indescr in
-    Lwt.catch (fun () -> listen_client inch outch >>= finish) finish);
+      b := true;
+      nb_clients := !nb_clients + 1;
+      let inch = Lwt_io.of_fd ~mode:Lwt_io.input indescr in
+      let outch = Lwt_io.of_fd ~mode:Lwt_io.output indescr in
+      Lwt.catch (fun () -> listen_client inch outch >>= finish) finish
+  );
   loop socket
 
 let () =
@@ -222,13 +236,17 @@ let () =
     (let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
      Lwt.catch
        (fun () ->
-          Lwt_unix.bind socket (Unix.ADDR_UNIX (directory ^ "/" ^ socketname)))
+         Lwt_unix.bind socket (Unix.ADDR_UNIX (directory ^ "/" ^ socketname))
+       )
        (fun _exn ->
-          errlog
-            ("Please make sure that the directory " ^ directory
-           ^ " exists, writable for ocsidbm, and no other ocsidbm process is running on the same directory. If not, remove the file "
-           ^ directory ^ "/" ^ socketname);
-          the_end 1)
+         errlog
+           ("Please make sure that the directory " ^ directory
+          ^ " exists, writable for ocsidbm, and no other ocsidbm process is \
+             running on the same directory. If not, remove the file "
+          ^ directory ^ "/" ^ socketname
+           );
+         the_end 1
+       )
      >>= fun () ->
      Lwt_unix.listen socket 20;
      (* Done in ocsipersist.ml
@@ -238,11 +256,13 @@ let () =
             Unix.close devnull;
             Unix.close Unix.stdin; *)
      Lwt.async (fun () ->
-       Lwt_unix.sleep 4.1 >>= fun () ->
-       if not !b then close_all 0 ();
-       Lwt.return ());
+         Lwt_unix.sleep 4.1 >>= fun () ->
+         if not !b then close_all 0 ();
+         Lwt.return ()
+     );
      (* If nothing happened during 5 seconds, I quit *)
-     loop socket)
+     loop socket
+    )
 
 (*****************************************************************************)
 (** Garbage collection of expired data *)
