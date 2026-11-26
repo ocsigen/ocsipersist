@@ -13,4 +13,6 @@ let get_store () =
   | Some d -> d
   | None ->
       failwith
-        "Ocsipersist: no store directory. Call Ocsipersist_settings.set_store before Ocsipersist.init, or, with Ocsigen Server's configuration file, give <store dir=\"...\"/> to ocsipersist-dbm-config."
+        "Ocsipersist: no store directory. Call Ocsipersist_settings.set_store \
+         before Ocsipersist.init, or, with Ocsigen Server's configuration \
+         file, give <store dir=\"...\"/> to ocsipersist-dbm-config."

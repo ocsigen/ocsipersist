@@ -49,7 +49,9 @@ let conn_pool : (string, unit) Hashtbl.t PGOCaml.t Lwt_pool.t ref =
   (* This connection pool will be overwritten by init_fun! *)
   ref
     (Lwt_pool.create !Config.size_conn_pool ~validate:PGOCaml.alive ~dispose
-       (fun () -> Lwt.fail (Failure "Ocsipersist db not initialised")))
+       (fun () -> Lwt.fail (Failure "Ocsipersist db not initialised")
+     )
+    )
 
 let use_pool f =
   Lwt_pool.use !conn_pool @@ fun db ->
@@ -58,12 +60,14 @@ let use_pool f =
     (function
       | PGOCaml.Error msg as e ->
           Logs.err ~src:section (fun fmt ->
-            fmt "postgresql protocol error: %s" msg);
+              fmt "postgresql protocol error: %s" msg
+          );
           PGOCaml.close db >>= fun () -> Lwt.fail e
       | Lwt.Canceled as e ->
           Logs.err ~src:section (fun fmt -> fmt "thread canceled");
           PGOCaml.close db >>= fun () -> Lwt.fail e
-      | e -> Lwt.fail e)
+      | e -> Lwt.fail e
+      )
 
 (* escapes characters that are not in the range of 0x20..0x7e;
    this is to meet PostgreSQL's format requirements for text fields
@@ -108,7 +112,9 @@ let unescape_string str =
         incr i;
         let byte = (byte lsl 3) + oct_val str.[!i] in
         incr i;
-        Buffer.add_char buf (Char.chr byte)))
+        Buffer.add_char buf (Char.chr byte)
+      )
+    )
     else (incr i; Buffer.add_char buf c)
   done;
   Buffer.contents buf
@@ -135,11 +141,12 @@ let prepare db query =
   let name = Digest.to_hex (Digest.string query) in
   (* Have we prepared this statement already?  If not, do so. *)
   let is_prepared = Hashtbl.mem hashtbl name in
-  (if is_prepared
-   then Lwt.return ()
-   else
-     PGOCaml.prepare db ~name ~query ()
-     >> Lwt.return @@ Hashtbl.add hashtbl name ())
+  ( if is_prepared
+    then Lwt.return ()
+    else
+      PGOCaml.prepare db ~name ~query ()
+      >> Lwt.return @@ Hashtbl.add hashtbl name ()
+  )
   >>= fun () -> Lwt.return name
 
 let exec db query params =
@@ -162,8 +169,8 @@ module Functorial = struct
 
   module Table
       (T : sig
-         val name : string
-       end)
+        val name : string
+      end)
       (Key : COLUMN)
       (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t =
   struct
@@ -190,7 +197,8 @@ module Functorial = struct
       let create_table table db =
         let query =
           sprintf
-            "CREATE TABLE IF NOT EXISTS %s (key %s, value %s, PRIMARY KEY (key))"
+            "CREATE TABLE IF NOT EXISTS %s (key %s, value %s, PRIMARY KEY \
+             (key))"
             table Key.column_type Value.column_type
         in
         Aux.exec_ db query []
@@ -211,8 +219,9 @@ module Functorial = struct
       with_table @@ fun db ->
       let query =
         sprintf
-          "INSERT INTO %s VALUES ($1, $2)
-                           ON CONFLICT (key) DO UPDATE SET value = $2"
+          "INSERT INTO %s VALUES ($1, $2)\n\
+          \                           ON CONFLICT (key) DO UPDATE SET value = \
+           $2"
           name
       in
       Aux.exec_ db query @@ Aux.encode_pair key value
@@ -236,29 +245,33 @@ module Functorial = struct
       Aux.exec_ db "BEGIN" [] >>= fun () ->
       Lwt.catch
         (fun () ->
-           let query = sprintf "SELECT value FROM %s WHERE key = $1" name in
-           Aux.exec db query [Key.encode key] >>= fun value ->
-           let old_value =
-             match value with
-             | [Some v] :: _ -> Some (Value.decode v)
-             | _ -> None
-           in
-           (match f old_value with
-             | Some new_value ->
-                 let query =
-                   sprintf
-                     "INSERT INTO %s VALUES ($1, $2)
-                     ON CONFLICT (key) DO UPDATE SET value = $2"
-                     name
-                 in
-                 Aux.exec_ db query @@ Aux.encode_pair key new_value
-             | None -> (
-               match old_value with
-               | Some _ ->
-                   let query = sprintf "DELETE FROM %s WHERE key = $1" name in
-                   Aux.exec_ db query [Key.encode key]
-               | None -> Lwt.return_unit))
-           >>= fun () -> Aux.exec_ db "COMMIT" [])
+          let query = sprintf "SELECT value FROM %s WHERE key = $1" name in
+          Aux.exec db query [Key.encode key] >>= fun value ->
+          let old_value =
+            match value with
+            | [Some v] :: _ -> Some (Value.decode v)
+            | _ -> None
+          in
+          ( match f old_value with
+            | Some new_value ->
+                let query =
+                  sprintf
+                    "INSERT INTO %s VALUES ($1, $2)\n\
+                    \                     ON CONFLICT (key) DO UPDATE SET \
+                     value = $2"
+                    name
+                in
+                Aux.exec_ db query @@ Aux.encode_pair key new_value
+            | None -> (
+              match old_value with
+              | Some _ ->
+                  let query = sprintf "DELETE FROM %s WHERE key = $1" name in
+                  Aux.exec_ db query [Key.encode key]
+              | None -> Lwt.return_unit
+            )
+            )
+          >>= fun () -> Aux.exec_ db "COMMIT" []
+        )
         (fun e -> Aux.exec_ db "ROLLBACK" [] >>= fun () -> Lwt.fail e)
 
     let length () =
@@ -280,13 +293,13 @@ module Functorial = struct
           in
           let query =
             sprintf
-              "SELECT * FROM %s
-                           WHERE ($1 :: %s IS NULL OR key > $1)
-                           AND ($2 :: %s IS NULL OR key > $2)
-                           AND ($3 :: %s IS NULL OR key >= $3)
-                           AND ($4 :: %s IS NULL OR key < $4)
-                           AND ($5 :: %s IS NULL OR key <= $5)
-                           ORDER BY key LIMIT $6"
+              "SELECT * FROM %s\n\
+              \                           WHERE ($1 :: %s IS NULL OR key > $1)\n\
+              \                           AND ($2 :: %s IS NULL OR key > $2)\n\
+              \                           AND ($3 :: %s IS NULL OR key >= $3)\n\
+              \                           AND ($4 :: %s IS NULL OR key < $4)\n\
+              \                           AND ($5 :: %s IS NULL OR key <= $5)\n\
+              \                           ORDER BY key LIMIT $6"
               name Key.column_type Key.column_type Key.column_type
               Key.column_type Key.column_type
           in
@@ -301,7 +314,8 @@ module Functorial = struct
             ; Option.map Key.encode geq
             ; Option.map Key.encode lt
             ; Option.map Key.encode leq
-            ; Some (Int64.to_string limit) ]
+            ; Some (Int64.to_string limit)
+            ]
           in
           with_table (fun db -> Aux.exec_opt db query args) >>= fun l ->
           let key_values = List.map key_value_of_row l in
@@ -338,12 +352,12 @@ module Functorial = struct
       failwith "Ocsipersist.iter_block: not implemented"
 
     module Variable = Ocsipersist_lib.Variable (struct
-        type k = key
-        type v = value
+      type k = key
+      type v = value
 
-        let find = find
-        let add = add
-      end)
+      let find = find
+      let add = add
+    end)
   end
 
   module Column = struct
@@ -364,8 +378,8 @@ module Functorial = struct
     end
 
     module Marshal (C : sig
-        type t
-      end) : COLUMN with type t = C.t = struct
+      type t
+    end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "bytea"
@@ -374,10 +388,10 @@ module Functorial = struct
     end
 
     module Json (C : sig
-        type t
+      type t
 
-        val t : t Deriving_Json.t
-      end) : COLUMN with type t = C.t = struct
+      val t : t Deriving_Json.t
+    end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "text"
@@ -401,7 +415,8 @@ module Store = struct
     let create_table db table =
       let query =
         sprintf
-          "CREATE TABLE IF NOT EXISTS %s (key TEXT, value BYTEA, PRIMARY KEY(key))"
+          "CREATE TABLE IF NOT EXISTS %s (key TEXT, value BYTEA, PRIMARY \
+           KEY(key))"
           table
       in
       exec_ db query []
@@ -411,8 +426,8 @@ module Store = struct
   let make_persistent_worker ~store ~name ~default db =
     let query =
       sprintf
-        "INSERT INTO %s VALUES ( $1 , $2 )
-                         ON CONFLICT ( key ) DO NOTHING"
+        "INSERT INTO %s VALUES ( $1 , $2 )\n\
+        \                         ON CONFLICT ( key ) DO NOTHING"
         store
     in
     (* NOTE: incompatible with < 9.5 *)

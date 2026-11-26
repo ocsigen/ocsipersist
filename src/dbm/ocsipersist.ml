@@ -21,7 +21,8 @@ module Db = struct
     let log =
       Option.map
         (fun path ->
-           Unix.openfile path [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND] 0o640)
+          Unix.openfile path [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND] 0o640
+        )
         !Config.error_log_path
     in
     let devnull = Unix.openfile "/dev/null" [Unix.O_RDWR] 0 in
@@ -39,36 +40,46 @@ module Db = struct
     let sname = Filename.concat directory socketname in
     Lwt.catch
       (fun () ->
-         let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
-         Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
-         Lwt.return socket)
+        let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
+        Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
+        Lwt.return socket
+      )
       (fun _ ->
-         Logs.warn ~src:section (fun fmt ->
-           fmt "Launching a new Ocsidbm process: %s on directory %s."
-             !Config.ocsidbm directory);
-         launch_ocsidbm directory;
-         Lwt_unix.sleep 1.1 >>= fun () ->
-         let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
-         Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
-         Lwt.return socket)
+        Logs.warn ~src:section (fun fmt ->
+            fmt "Launching a new Ocsidbm process: %s on directory %s."
+              !Config.ocsidbm directory
+        );
+        launch_ocsidbm directory;
+        Lwt_unix.sleep 1.1 >>= fun () ->
+        let socket = Lwt_unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
+        Lwt_unix.connect socket (Unix.ADDR_UNIX sname) >>= fun () ->
+        Lwt.return socket
+      )
 
   let rec get_indescr directory i =
     Lwt.catch
       (fun () -> try_connect directory)
       (fun e ->
-         if i = 0
-         then (
-           Logs.err ~src:section (fun fmt ->
-             fmt
-               "Cannot connect to Ocsidbm. Will continue without persistent session support. Error message is: %s .Have a look at the logs to see if there is an error message from the Ocsidbm process."
-               (match e with
-               | Unix.Unix_error (a, b, c) ->
-                   Printf.sprintf "%a in %s(%s)"
-                     (fun () -> Unix.error_message)
-                     a b c
-               | _ -> Printexc.to_string e));
-           Lwt.fail e)
-         else Lwt_unix.sleep 2.1 >>= fun () -> get_indescr directory (i - 1))
+        if i = 0
+        then (
+          Logs.err ~src:section (fun fmt ->
+              fmt
+                "Cannot connect to Ocsidbm. Will continue without persistent \
+                 session support. Error message is: %s .Have a look at the \
+                 logs to see if there is an error message from the Ocsidbm \
+                 process."
+                ( match e with
+                | Unix.Unix_error (a, b, c) ->
+                    Printf.sprintf "%a in %s(%s)"
+                      (fun () -> Unix.error_message)
+                      a b c
+                | _ -> Printexc.to_string e
+                )
+          );
+          Lwt.fail e
+        )
+        else Lwt_unix.sleep 2.1 >>= fun () -> get_indescr directory (i - 1)
+      )
 
   let send =
     let previous = ref (Lwt.return Ok) in
@@ -78,7 +89,8 @@ module Db = struct
       !Config.outch >>= fun outch ->
       (previous :=
          Lwt_io.write_value outch v >>= fun () ->
-         Lwt_io.flush outch >>= fun () -> Lwt_io.read_value inch);
+         Lwt_io.flush outch >>= fun () -> Lwt_io.read_value inch
+      );
       !previous
 
   let get (store, name) =
@@ -145,7 +157,8 @@ module Store = struct
         | Not_found ->
             default () >>= fun def ->
             Db.replace pvname (Marshal.to_string def [])
-        | e -> Lwt.fail e)
+        | e -> Lwt.fail e
+        )
     >>= fun () -> Lwt.return pvname
 
   let make_persistent_lazy ~store ~name ~default =
@@ -179,8 +192,8 @@ module Functorial = struct
 
   module Table
       (T : sig
-         val name : string
-       end)
+        val name : string
+      end)
       (Key : COLUMN)
       (Value : COLUMN) :
     Ocsipersist_lib.Sigs.TABLE with type key = Key.t and type value = Value.t =
@@ -215,7 +228,9 @@ module Functorial = struct
                 | _, Some ge, _, _ when k < ge -> aux Db.nextkey beg
                 | _ ->
                     i := Int64.succ !i;
-                    find k >>= fun r -> f k r beg >>= aux Db.nextkey))
+                    find k >>= fun r -> f k r beg >>= aux Db.nextkey
+              )
+          )
       in
       aux Db.firstkey beg
 
@@ -237,9 +252,10 @@ module Functorial = struct
       in
       fold ?count ?gt ?geq ?lt ?leq
         (fun k v () ->
-           batch := (k, v) :: !batch;
-           n := Int64.succ !n;
-           if !n >= max_batch_size then flush () else Lwt.return_unit)
+          batch := (k, v) :: !batch;
+          n := Int64.succ !n;
+          if !n >= max_batch_size then flush () else Lwt.return_unit
+        )
         ()
       >>= fun () -> flush ()
 
@@ -261,12 +277,12 @@ module Functorial = struct
       Db.length name
 
     module Variable = Ocsipersist_lib.Variable (struct
-        type k = key
-        type v = value
+      type k = key
+      type v = value
 
-        let find = find
-        let add = add
-      end)
+      let find = find
+      let add = add
+    end)
   end
 
   module Column = struct
@@ -287,8 +303,8 @@ module Functorial = struct
     end
 
     module Marshal (C : sig
-        type t
-      end) : COLUMN with type t = C.t = struct
+      type t
+    end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "_"
@@ -297,10 +313,10 @@ module Functorial = struct
     end
 
     module Json (C : sig
-        type t
+      type t
 
-        val t : t Deriving_Json.t
-      end) : COLUMN with type t = C.t = struct
+      val t : t Deriving_Json.t
+    end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "_"
@@ -361,7 +377,8 @@ let init () =
   if !Ocsipersist_settings.delay_loading
   then
     Logs.warn ~src:section (fun fmt ->
-      fmt "Asynchronuous initialization (may fail later)")
+        fmt "Asynchronuous initialization (may fail later)"
+    )
   else Logs.warn ~src:section (fun fmt -> fmt "Initializing ...");
   let indescr = Db.get_indescr directory 2 in
   if !Ocsipersist_settings.delay_loading
@@ -369,10 +386,10 @@ let init () =
     Ocsipersist_settings.inch :=
       Lwt.map (Lwt_io.of_fd ~mode:Lwt_io.input) indescr;
     Ocsipersist_settings.outch :=
-      Lwt.map (Lwt_io.of_fd ~mode:Lwt_io.output) indescr)
+      Lwt.map (Lwt_io.of_fd ~mode:Lwt_io.output) indescr
+  )
   else
     let r = Lwt_main.run indescr in
     Ocsipersist_settings.inch := Lwt.return (Lwt_io.of_fd ~mode:Lwt_io.input r);
-    Ocsipersist_settings.outch :=
-      Lwt.return (Lwt_io.of_fd ~mode:Lwt_io.output r);
+    Ocsipersist_settings.outch := Lwt.return (Lwt_io.of_fd ~mode:Lwt_io.output r);
     Logs.warn ~src:section (fun fmt -> fmt "...Initialization complete")

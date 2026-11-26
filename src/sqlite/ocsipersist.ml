@@ -19,7 +19,8 @@ module Aux = struct
       | Rc.BUSY | Rc.LOCKED -> yield (); bind_safely stmt l
       | rc ->
           ignore (finalize stmt : Rc.t);
-          failwith (Rc.to_string rc))
+          failwith (Rc.to_string rc)
+    )
 
   let close_safely db =
     if not (db_close db)
@@ -47,7 +48,8 @@ module Aux = struct
 
   let () =
     at_exit (fun () ->
-      match !db_conn with Some db -> close_safely db | None -> ())
+        match !db_conn with Some db -> close_safely db | None -> ()
+    )
 
   (* The setting is read here, in the calling thread, and not in the worker
      thread: an access uses the file set when it is made, even if the worker
@@ -105,7 +107,8 @@ module Aux = struct
   let db_create table =
     let sql =
       sprintf
-        "CREATE TABLE IF NOT EXISTS %s (key TEXT, value BLOB,  PRIMARY KEY(key) ON CONFLICT REPLACE)"
+        "CREATE TABLE IF NOT EXISTS %s (key TEXT, value BLOB,  PRIMARY \
+         KEY(key) ON CONFLICT REPLACE)"
         table
     in
     exec_safely (fun db -> step_until_done (prepare db sql)) >>= fun () ->
@@ -116,7 +119,8 @@ module Aux = struct
       let sqlget = sprintf "SELECT value FROM %s WHERE key = :key " table in
       let stmt = bind_safely (prepare db sqlget) [Data.TEXT key, ":key"] in
       step_one_row stmt (fun stmt ->
-        match column stmt 0 with Data.BLOB s -> s | _ -> assert false)
+          match column stmt 0 with Data.BLOB s -> s | _ -> assert false
+      )
     in
     let replace (table, key) value db =
       let sqlreplace =
@@ -149,7 +153,8 @@ module Store = struct
         | Not_found ->
             default () >>= fun def ->
             Aux.db_replace pvname (Marshal.to_string def [])
-        | e -> Lwt.fail e)
+        | e -> Lwt.fail e
+        )
     >>= fun () -> Lwt.return pvname
 
   let make_persistent_lazy ~store ~name ~default =
@@ -183,8 +188,8 @@ module Functorial = struct
 
   module Table
       (T : sig
-         val name : string
-       end)
+        val name : string
+      end)
       (Key : COLUMN)
       (Value : COLUMN) :
     Ocsipersist_lib.Sigs.TABLE with type key = Key.t and type value = Value.t =
@@ -199,8 +204,9 @@ module Functorial = struct
       let create db =
         let sql =
           sprintf
-            "CREATE TABLE IF NOT EXISTS %s
-             (key %s, value %s, PRIMARY KEY (key) ON CONFLICT REPLACE)"
+            "CREATE TABLE IF NOT EXISTS %s\n\
+            \             (key %s, value %s, PRIMARY KEY (key) ON CONFLICT \
+             REPLACE)"
             name Key.column_type Value.column_type
         in
         Aux.step_until_done (prepare db sql)
@@ -231,19 +237,20 @@ module Functorial = struct
     let db_length table db =
       let sql = sprintf "SELECT count (1) FROM %s " table in
       Aux.step_one_row (prepare db sql) (fun stmt ->
-        match column stmt 0 with
-        | Data.INT s -> Int64.to_int s
-        | _ -> assert false)
+          match column stmt 0 with
+          | Data.INT s -> Int64.to_int s
+          | _ -> assert false
+      )
 
     let db_iter ?gt ?geq ?lt ?leq table rowid db =
       let sql =
         sprintf
-          "SELECT key, value, ROWID FROM %s
-                 WHERE ROWID > :rowid
-                 AND coalesce (key > :gt, true)
-                 AND coalesce (key >= :geq, true)
-                 AND coalesce (key < :lt, true)
-                 AND coalesce (key <= :leq, true)"
+          "SELECT key, value, ROWID FROM %s\n\
+          \                 WHERE ROWID > :rowid\n\
+          \                 AND coalesce (key > :gt, true)\n\
+          \                 AND coalesce (key >= :geq, true)\n\
+          \                 AND coalesce (key < :lt, true)\n\
+          \                 AND coalesce (key <= :leq, true)"
           table
       in
       let encode_key_opt = function
@@ -260,7 +267,8 @@ module Functorial = struct
           ; gt_sql, ":gt"
           ; geq_sql, ":geq"
           ; lt_sql, ":lt"
-          ; leq_sql, ":leq" ]
+          ; leq_sql, ":leq"
+          ]
       in
       let rec aux () =
         match step stmt with
@@ -269,7 +277,8 @@ module Functorial = struct
           | k, v, Data.INT rowid ->
               ignore (finalize stmt : Rc.t);
               Some (k, v, rowid)
-          | _ -> assert false)
+          | _ -> assert false
+        )
         | Rc.DONE ->
             ignore (finalize stmt : Rc.t);
             None
@@ -307,7 +316,8 @@ module Functorial = struct
             with_table (db_iter ?gt ?geq ?lt ?leq name rowid) >>= function
             | None -> Lwt.return beg
             | Some (k, v, rowid') ->
-                f (Key.decode k) (Value.decode v) beg >>= aux rowid')
+                f (Key.decode k) (Value.decode v) beg >>= aux rowid'
+          )
       in
       aux Int64.zero beg
 
@@ -330,19 +340,20 @@ module Functorial = struct
             let n = ref 0L in
             let last_rowid = ref rowid in
             with_table (fun db ->
-              let rec collect () =
-                if !n >= limit
-                then ()
-                else
-                  match db_iter ?gt ?geq ?lt ?leq name !last_rowid db with
-                  | None -> ()
-                  | Some (k, v, rowid') ->
-                      batch := (Key.decode k, Value.decode v) :: !batch;
-                      last_rowid := rowid';
-                      n := Int64.succ !n;
-                      collect ()
-              in
-              collect ())
+                let rec collect () =
+                  if !n >= limit
+                  then ()
+                  else
+                    match db_iter ?gt ?geq ?lt ?leq name !last_rowid db with
+                    | None -> ()
+                    | Some (k, v, rowid') ->
+                        batch := (Key.decode k, Value.decode v) :: !batch;
+                        last_rowid := rowid';
+                        n := Int64.succ !n;
+                        collect ()
+                in
+                collect ()
+            )
             >>= fun () ->
             let items = List.rev !batch in
             if items = []
@@ -357,12 +368,12 @@ module Functorial = struct
     let iter_block ?count ?gt ?geq ?lt ?leq f =
       let sql =
         sprintf
-          "SELECT key, value FROM %s
-         WHERE coalesce (key > :gt, true)
-           AND coalesce (key >= :geq, true)
-           AND coalesce (key < :lt, true)
-           AND coalesce (key <= :leq, true)
-         LIMIT coalesce (:count, -1)"
+          "SELECT key, value FROM %s\n\
+          \         WHERE coalesce (key > :gt, true)\n\
+          \           AND coalesce (key >= :geq, true)\n\
+          \           AND coalesce (key < :lt, true)\n\
+          \           AND coalesce (key <= :leq, true)\n\
+          \         LIMIT coalesce (:count, -1)"
           name
       in
       let encode_key_opt = function
@@ -383,7 +394,8 @@ module Functorial = struct
             ; geq_sql, ":geq"
             ; lt_sql, ":lt"
             ; leq_sql, ":leq"
-            ; count_sql, ":count" ]
+            ; count_sql, ":count"
+            ]
         in
         let rec aux () =
           match step stmt with
@@ -403,12 +415,12 @@ module Functorial = struct
     let length () = with_table @@ db_length name
 
     module Variable = Ocsipersist_lib.Variable (struct
-        type k = key
-        type v = value
+      type k = key
+      type v = value
 
-        let find = find
-        let add = add
-      end)
+      let find = find
+      let add = add
+    end)
   end
 
   module Column = struct
@@ -429,8 +441,8 @@ module Functorial = struct
     end
 
     module Marshal (C : sig
-        type t
-      end) : COLUMN with type t = C.t = struct
+      type t
+    end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "blob"
@@ -442,10 +454,10 @@ module Functorial = struct
     end
 
     module Json (C : sig
-        type t
+      type t
 
-        val t : t Deriving_Json.t
-      end) : COLUMN with type t = C.t = struct
+      val t : t Deriving_Json.t
+    end) : COLUMN with type t = C.t = struct
       type t = C.t
 
       let column_type = "text"

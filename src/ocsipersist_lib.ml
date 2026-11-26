@@ -16,7 +16,7 @@ module Sigs = struct
     val length : unit -> int Lwt.t
 
     val iter :
-       ?count:int64
+         ?count:int64
       -> ?gt:key
       -> ?geq:key
       -> ?lt:key
@@ -25,7 +25,7 @@ module Sigs = struct
       -> unit Lwt.t
 
     val fold :
-       ?count:int64
+         ?count:int64
       -> ?gt:key
       -> ?geq:key
       -> ?lt:key
@@ -35,7 +35,7 @@ module Sigs = struct
       -> 'a Lwt.t
 
     val iter_block :
-       ?count:int64
+         ?count:int64
       -> ?gt:key
       -> ?geq:key
       -> ?lt:key
@@ -44,7 +44,7 @@ module Sigs = struct
       -> unit Lwt.t
 
     val iter_batch :
-       ?count:int64
+         ?count:int64
       -> ?gt:key
       -> ?geq:key
       -> ?lt:key
@@ -76,8 +76,8 @@ module Sigs = struct
 
     module Table
         (_ : sig
-           val name : string
-         end)
+          val name : string
+        end)
         (Key : COLUMN)
         (Value : COLUMN) : TABLE with type key = Key.t and type value = Value.t
 
@@ -86,14 +86,14 @@ module Sigs = struct
       module Float : COLUMN with type t = float
 
       module Marshal (C : sig
-          type t
-        end) : COLUMN with type t = C.t
+        type t
+      end) : COLUMN with type t = C.t
 
       module Json (C : sig
-          type t
+        type t
 
-          val t : t Deriving_Json.t
-        end) : COLUMN with type t = C.t
+        val t : t Deriving_Json.t
+      end) : COLUMN with type t = C.t
     end
   end
 
@@ -148,10 +148,7 @@ module Sigs = struct
     [@@alert deprecated "Use iter instead."]
 
     val fold_step :
-       (string -> 'a -> 'b -> 'b Lwt.t)
-      -> 'a table
-      -> 'b
-      -> 'b Lwt.t
+      (string -> 'a -> 'b -> 'b Lwt.t) -> 'a table -> 'b -> 'b Lwt.t
     [@@alert deprecated "Use fold instead."]
 
     val iter_block : (string -> 'a -> unit) -> 'a table -> unit Lwt.t
@@ -218,19 +215,13 @@ module Sigs = struct
         a value instead. *)
 
     val make_persistent_lazy :
-       store:store
-      -> name:string
-      -> default:(unit -> 'a)
-      -> 'a t Lwt.t
+      store:store -> name:string -> default:(unit -> 'a) -> 'a t Lwt.t
     (** Same as make_persistent but the default value is evaluated only
         if needed
     *)
 
     val make_persistent_lazy_lwt :
-       store:store
-      -> name:string
-      -> default:(unit -> 'a Lwt.t)
-      -> 'a t Lwt.t
+      store:store -> name:string -> default:(unit -> 'a Lwt.t) -> 'a t Lwt.t
     (** Lwt version of make_persistent_lazy.
     *)
 
@@ -283,7 +274,7 @@ module Sigs = struct
         the database. *)
 
     val make_persistent :
-       store:store
+         store:store
       -> name:string
       -> json:'a Deriving_Json.t
       -> default:'a
@@ -302,7 +293,7 @@ module Sigs = struct
         overwrite it with {!set}. *)
 
     val make_persistent_lazy :
-       store:store
+         store:store
       -> name:string
       -> json:'a Deriving_Json.t
       -> default:(unit -> 'a)
@@ -312,7 +303,7 @@ module Sigs = struct
         access fails, the next one computes it again. *)
 
     val make_persistent_lazy_lwt :
-       store:store
+         store:store
       -> name:string
       -> json:'a Deriving_Json.t
       -> default:(unit -> 'a Lwt.t)
@@ -356,7 +347,8 @@ let validate_name name =
     invalid_arg
       (Printf.sprintf
          "Ocsipersist: invalid table/store name %S (only [a-zA-Z0-9_] allowed)"
-         name)
+         name
+      )
 
 (** Promises computed at first use. Unlike [Lwt.t Lazy.t], a failure is not
     kept: the next use runs the computation again. Ocsipersist uses them to
@@ -418,8 +410,8 @@ module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
         end)
         (Column.String)
         (Column.Marshal (struct
-             type t = a
-           end))
+          type t = a
+        end))
     in
     Lwt.return (module T : POLYMORPHIC with type value = a)
 
@@ -444,12 +436,12 @@ module Polymorphic (Functorial : FUNCTORIAL) : POLYMORPHIC = struct
 end
 
 module Variable (T : sig
-    type k
-    type v
+  type k
+  type v
 
-    val find : k -> v Lwt.t
-    val add : k -> v -> unit Lwt.t
-  end) =
+  val find : k -> v Lwt.t
+  val add : k -> v -> unit Lwt.t
+end) =
 struct
   type t = {name : T.k; default : unit -> T.v Lwt.t}
 
@@ -467,7 +459,8 @@ struct
         | Not_found ->
             default () >>= fun d ->
             T.add name d >>= fun () -> Lwt.return d
-        | exc -> Lwt.reraise exc)
+        | exc -> Lwt.reraise exc
+        )
 
   let set {name; _} = T.add name
 end
@@ -484,8 +477,10 @@ module Ref (Store : STORE) = struct
     | Some name ->
         Per
           (Lazy_lwt.make (fun () ->
-             let* store = Lazy_lwt.force store in
-             Store.make_persistent ~store ~name ~default:v))
+               let* store = Lazy_lwt.force store in
+               Store.make_persistent ~store ~name ~default:v
+           )
+          )
 
   let get = function
     | Ref r -> Lwt.return !r
@@ -508,21 +503,17 @@ module Store_json (Functorial : FUNCTORIAL) : STORE_JSON = struct
 
   type 'a t =
     { init : unit Lazy_lwt.t
-      (** Writes the default value if there is none, at the first use. *)
+          (** Writes the default value if there is none, at the first use. *)
     ; find : unit -> 'a Lwt.t
-    ; add : 'a -> unit Lwt.t }
+    ; add : 'a -> unit Lwt.t
+    }
 
   let open_store name =
     validate_name name;
     Lwt.return ("store_json___" ^ name)
 
   let make_persistent_lazy_lwt
-        (type a)
-        ~store
-        ~name
-        ~(json : a Deriving_Json.t)
-        ~default
-    =
+      (type a) ~store ~name ~(json : a Deriving_Json.t) ~default =
     let open Functorial in
     let module T =
       Table
@@ -531,25 +522,27 @@ module Store_json (Functorial : FUNCTORIAL) : STORE_JSON = struct
         end)
         (Column.String)
         (Column.Json (struct
-             type t = a
+          type t = a
 
-             let t = json
-           end))
+          let t = json
+        end))
     in
     let find () = T.find name in
     let add v = T.add name v in
     let init =
       Lazy_lwt.make (fun () ->
-        Lwt.catch
-          (fun () -> find () >>= fun _ -> Lwt.return ())
-          (function
-            | Not_found -> default () >>= fun def -> add def
-            | Decoding_error _ ->
-                (* An existing value that cannot be decoded is left in place:
+          Lwt.catch
+            (fun () -> find () >>= fun _ -> Lwt.return ())
+            (function
+              | Not_found -> default () >>= fun def -> add def
+              | Decoding_error _ ->
+                  (* An existing value that cannot be decoded is left in place:
                    deciding whether to overwrite or report it belongs to the
                    caller, on [get]. *)
-                Lwt.return ()
-            | e -> Lwt.fail e))
+                  Lwt.return ()
+              | e -> Lwt.fail e
+              )
+      )
     in
     Lwt.return {init; find; add}
 
@@ -582,7 +575,8 @@ module Ref_json (Functorial : FUNCTORIAL) : REF_JSON = struct
     | Some name ->
         Per
           (let* store = Lazy.force store in
-           S.make_persistent ~store ~name ~json ~default:v)
+           S.make_persistent ~store ~name ~json ~default:v
+          )
 
   let get = function
     | Ref r -> Lwt.return !r
