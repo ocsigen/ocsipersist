@@ -1,2 +1,4 @@
 # Upgrade to OCamlformat 0.30.0
 9c31a87df4cb2419367b4047090069ef23e19c41
+# Switch to the ocsigen profile
+ca7c00e4df5dd30b8eb2910402fb90946115be44
