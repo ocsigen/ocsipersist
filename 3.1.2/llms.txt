@@ -7,7 +7,6 @@
 - [ocsipersist-sqlite](ocsipersist-sqlite/index.md)
 - [ocsipersist-dbm](ocsipersist-dbm/index.md)
 - [ocsipersist-pgsql](ocsipersist-pgsql/index.md)
-- [OCaml Package Documentation](index.md)
 - [ocsipersist-dbm-config index](ocsipersist-dbm-config/index.md)
 - [ocsipersist-lib index](ocsipersist-lib/index.md)
 - [ocsipersist-pgsql-config index](ocsipersist-pgsql-config/index.md)
